@@ -1,10 +1,5 @@
 #pragma once
 
-#ifdef _WIN32
-#include <SDKDDKVer.h>
-#include <tchar.h>
-#endif /* _WIN32 */
-
 #include <string>
 #include <iostream>
 #include <strstream>
