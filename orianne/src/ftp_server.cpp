@@ -4,13 +4,15 @@
 #include "ftp_console.h"
 #include "ftp_session.h"
 
+#include <memory>
+
 orianne::FtpServer::FtpServer(boost::asio::io_service& io_service, uint16_t port, std::string path)
   : acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {
   this->path = path;
   start();
 }
 
-struct connection_handler : boost::enable_shared_from_this<connection_handler> {
+struct connection_handler : std::enable_shared_from_this<connection_handler> {
 
   explicit connection_handler(boost::asio::io_service& service, std::string path)
     : socket(service), session(service, socket), console(session)
@@ -18,7 +20,7 @@ struct connection_handler : boost::enable_shared_from_this<connection_handler> {
     session.set_root_directory(boost::filesystem::path{ path });
   }
 
-  typedef boost::shared_ptr<connection_handler> ptr;
+  typedef std::shared_ptr<connection_handler> ptr;
 
   static ptr create(boost::asio::io_service& service, std::string path) {
     return ptr(new connection_handler(service, path));
@@ -91,7 +93,7 @@ void orianne::FtpServer::start() {
 
   connection_handler::ptr handler =
     connection_handler::create(acceptor.get_io_service(), path);
-  boost::shared_ptr<connection_handler>& sptr(handler);
+  std::shared_ptr<connection_handler>& sptr(handler);
 
   acceptor.async_accept(handler->socket,
     boost::bind(&connection_handler::handle_connect, sptr,

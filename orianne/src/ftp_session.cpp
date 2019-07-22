@@ -9,9 +9,10 @@
 
 #include <direct.h>
 
+#include <memory>
 
 
-template<typename T> struct dumper : boost::enable_shared_from_this<T> {
+template<typename T> struct dumper : std::enable_shared_from_this<T> {
   boost::asio::io_service& service;
   boost::asio::ip::tcp::socket socket;
   boost::function<void(const orianne::FtpResult&)> callback;
@@ -21,13 +22,13 @@ template<typename T> struct dumper : boost::enable_shared_from_this<T> {
   {
   }
 
-  static boost::shared_ptr<T> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service) {
-    return boost::shared_ptr<T>(new T(cb, service));
+  static std::shared_ptr<T> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service) {
+    return std::shared_ptr<T>(new T(cb, service));
   }
 
-  void async_wait(boost::asio::ip::tcp::acceptor& acceptor) {
-    acceptor.async_accept(socket,
-      boost::bind(&T::handle_connect, this->shared_from_this()));
+  void async_wait(boost::asio::ip::tcp::acceptor& acceptor)
+  {
+    acceptor.async_accept(socket, std::bind(&T::handle_connect, this->shared_from_this()));
   }
 };
 
@@ -65,8 +66,8 @@ struct FileDumper : dumper<FileDumper> {
   {
   }
 
-  static boost::shared_ptr<FileDumper> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
-    return boost::shared_ptr<FileDumper>(new FileDumper(cb, service, path));
+  static std::shared_ptr<FileDumper> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
+    return std::shared_ptr<FileDumper>(new FileDumper(cb, service, path));
   }
 
   void handle_connect() {
@@ -105,8 +106,8 @@ struct FileLoader : dumper<FileLoader> {
   {
   }
 
-  static boost::shared_ptr<FileLoader> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
-    return boost::shared_ptr<FileLoader>(new FileLoader(cb, service, path));
+  static std::shared_ptr<FileLoader> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
+    return std::shared_ptr<FileLoader>(new FileLoader(cb, service, path));
   }
 
   void handle_connect() {
@@ -359,7 +360,7 @@ static std::string get_list(const boost::filesystem::path& path) {
 }
 
 void orianne::FtpSession::list(boost::function<void(const orianne::FtpResult&)> cb) {
-  boost::shared_ptr<DirListDumper> dumper = DirListDumper::create(cb, io_service);
+  std::shared_ptr<DirListDumper> dumper(new DirListDumper(cb, io_service));
   dumper->set_data(get_list(root_directory / working_directory));
   dumper->async_wait(*acceptor);
 }
@@ -369,7 +370,7 @@ void orianne::FtpSession::store(const std::string& filename, boost::function<voi
 
   std::cout << "Opening " << path.make_preferred() << " for upload" << std::endl;
 
-  boost::shared_ptr<FileLoader> dumper = FileLoader::create(cb, io_service, path.make_preferred().string());
+  std::shared_ptr<FileLoader> dumper = FileLoader::create(cb, io_service, path.make_preferred().string());
   dumper->async_wait(*acceptor);
 }
 
@@ -378,7 +379,7 @@ void orianne::FtpSession::retrieve(const std::string& filename, boost::function<
 
   std::cout << "Opening " << path.make_preferred() << " for download" << std::endl;
 
-  boost::shared_ptr<FileDumper> dumper = FileDumper::create(cb, io_service, path.make_preferred().string());
+  std::shared_ptr<FileDumper> dumper = FileDumper::create(cb, io_service, path.make_preferred().string());
   dumper->async_wait(*acceptor);
 }
 
