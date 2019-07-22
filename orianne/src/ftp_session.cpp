@@ -10,19 +10,20 @@
 #include <direct.h>
 
 #include <memory>
+#include <functional>
 
 
 template<typename T> struct dumper : std::enable_shared_from_this<T> {
   boost::asio::io_service& service;
   boost::asio::ip::tcp::socket socket;
-  boost::function<void(const orianne::FtpResult&)> callback;
+  std::function<void(const orianne::FtpResult&)> callback;
 
-  explicit dumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service_)
+  explicit dumper(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service_)
     : service(service_), socket(service), callback(cb)
   {
   }
 
-  static std::shared_ptr<T> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service) {
+  static std::shared_ptr<T> create(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service) {
     return std::shared_ptr<T>(new T(cb, service));
   }
 
@@ -35,7 +36,7 @@ template<typename T> struct dumper : std::enable_shared_from_this<T> {
 struct DirListDumper : dumper<DirListDumper> {
   std::string data;
 
-  explicit DirListDumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service)
+  explicit DirListDumper(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service)
     : dumper(cb, service)
   {
   }
@@ -61,12 +62,12 @@ struct FileDumper : dumper<FileDumper> {
   char buffer[1024];
   boost::asio::mutable_buffers_1 m_buffer;
 
-  explicit FileDumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
+  explicit FileDumper(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
     : dumper(cb, service), stream(path.c_str(), std::ios::in | std::ios::binary), m_buffer(buffer, 1024)
   {
   }
 
-  static std::shared_ptr<FileDumper> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
+  static std::shared_ptr<FileDumper> create(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
     return std::shared_ptr<FileDumper>(new FileDumper(cb, service, path));
   }
 
@@ -101,12 +102,12 @@ struct FileLoader : dumper<FileLoader> {
   std::ofstream stream;
   char buffer[4096];
 
-  explicit FileLoader(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
+  explicit FileLoader(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
     : dumper(cb, service), stream(path.c_str(), std::ios::out | std::ios::binary)
   {
   }
 
-  static std::shared_ptr<FileLoader> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
+  static std::shared_ptr<FileLoader> create(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
     return std::shared_ptr<FileLoader>(new FileLoader(cb, service, path));
   }
 
@@ -359,13 +360,13 @@ static std::string get_list(const boost::filesystem::path& path) {
   return stream.str();
 }
 
-void orianne::FtpSession::list(boost::function<void(const orianne::FtpResult&)> cb) {
+void orianne::FtpSession::list(std::function<void(const orianne::FtpResult&)> cb) {
   std::shared_ptr<DirListDumper> dumper(new DirListDumper(cb, io_service));
   dumper->set_data(get_list(root_directory / working_directory));
   dumper->async_wait(*acceptor);
 }
 
-void orianne::FtpSession::store(const std::string& filename, boost::function<void(const orianne::FtpResult&)> cb) {
+void orianne::FtpSession::store(const std::string& filename, std::function<void(const orianne::FtpResult&)> cb) {
   boost::filesystem::path path = root_directory / working_directory / filename;
 
   std::cout << "Opening " << path.make_preferred() << " for upload" << std::endl;
@@ -374,7 +375,7 @@ void orianne::FtpSession::store(const std::string& filename, boost::function<voi
   dumper->async_wait(*acceptor);
 }
 
-void orianne::FtpSession::retrieve(const std::string& filename, boost::function<void(const orianne::FtpResult&)> cb) {
+void orianne::FtpSession::retrieve(const std::string& filename, std::function<void(const orianne::FtpResult&)> cb) {
   boost::filesystem::path path = root_directory / working_directory / filename;
 
   std::cout << "Opening " << path.make_preferred() << " for download" << std::endl;

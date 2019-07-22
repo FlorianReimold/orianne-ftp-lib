@@ -4,6 +4,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <functional>
+
 namespace orianne {
 
   struct FtpTransferType {
@@ -60,9 +62,9 @@ namespace orianne {
     FtpResult store(const std::string& filename);
     FtpResult no_operation();
 
-    void retrieve(const std::string& filename, boost::function<void(const FtpResult&)> cb);
-    void store(const std::string& filename, boost::function<void(const FtpResult&)> cb);
-    void list(boost::function<void(const FtpResult&)> cb);
+    void retrieve(const std::string& filename, std::function<void(const FtpResult&)> cb);
+    void store(const std::string& filename, std::function<void(const FtpResult&)> cb);
+    void list(std::function<void(const FtpResult&)> cb);
 
   private:
     boost::filesystem::path to_local_path(const std::string& ftp_path);
