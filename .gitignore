@@ -4,5 +4,8 @@ ipch
 *.sdf
 *.suo
 *.aps
-*.filters
 *.user
+*.opendb
+*.db
+/build
+/.vs
