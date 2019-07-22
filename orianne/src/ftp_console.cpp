@@ -2,8 +2,6 @@
 
 #include "ftp_console.h"
 
-#include <boost/lambda/lambda.hpp>
-
 orianne::FtpConsole::FtpConsole(FtpSession& _session)
   : session(_session), greeter_("220 orianne Ready.\r\n")
 {

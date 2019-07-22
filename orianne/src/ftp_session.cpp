@@ -335,20 +335,19 @@ orianne::FtpResult orianne::FtpSession::get_system() {
 }
 
 static std::string get_list(const boost::filesystem::path& path) {
-  using namespace boost::filesystem;
   std::stringstream stream;
 
-  if (!is_directory(path))
+  if (!boost::filesystem::is_directory(path))
     return "";
 
-  for (directory_iterator it(path); it != directory_iterator(); it++) {
+  for (boost::filesystem::directory_iterator it(path); it != boost::filesystem::directory_iterator(); it++) {
     struct stat t_stat;
     stat(it->path().string().c_str(), &t_stat);
     struct tm* timeinfo = localtime(&t_stat.st_ctime);
     char date[80];
     strftime(date, sizeof(date), "%b %e %Y", timeinfo);
 
-    bool dir = is_directory(it->path());
+    bool dir = boost::filesystem::is_directory(it->path());
     stream << boost::format("%crw-rw-rw-   1 %-10s %-10s %10lu %s %s\r\n")
       % (dir ? 'd' : '-')
       % "iTorrent" % "iTorrent"

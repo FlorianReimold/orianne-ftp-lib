@@ -9,8 +9,6 @@
 #include <stdio.h>
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
 
 #include <stdio.h>
 
