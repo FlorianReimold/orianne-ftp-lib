@@ -9,6 +9,143 @@
 
 #include <direct.h>
 
+
+
+template<typename T> struct dumper : boost::enable_shared_from_this<T> {
+  boost::asio::io_service& service;
+  boost::asio::ip::tcp::socket socket;
+  boost::function<void(const orianne::FtpResult&)> callback;
+
+  explicit dumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service_)
+    : service(service_), socket(service), callback(cb)
+  {
+  }
+
+  static boost::shared_ptr<T> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service) {
+    return boost::shared_ptr<T>(new T(cb, service));
+  }
+
+  void async_wait(boost::asio::ip::tcp::acceptor& acceptor) {
+    acceptor.async_accept(socket,
+      boost::bind(&T::handle_connect, this->shared_from_this()));
+  }
+};
+
+struct DirListDumper : dumper<DirListDumper> {
+  std::string data;
+
+  explicit DirListDumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service)
+    : dumper(cb, service)
+  {
+  }
+
+  void handle_connect() {
+    boost::asio::async_write(socket,
+      boost::asio::buffer(data),
+      boost::bind(&DirListDumper::handle_write, shared_from_this()));
+    callback(orianne::FtpResult(150, "Sending directory listing."));
+  }
+
+  void handle_write() {
+    callback(orianne::FtpResult(226, "Done."));
+  }
+
+  void set_data(const std::string& data_) {
+    data = data_;
+  }
+};
+
+struct FileDumper : dumper<FileDumper> {
+  std::ifstream stream;
+  char buffer[1024];
+  boost::asio::mutable_buffers_1 m_buffer;
+
+  explicit FileDumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
+    : dumper(cb, service), stream(path.c_str(), std::ios::in | std::ios::binary), m_buffer(buffer, 1024)
+  {
+  }
+
+  static boost::shared_ptr<FileDumper> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
+    return boost::shared_ptr<FileDumper>(new FileDumper(cb, service, path));
+  }
+
+  void handle_connect() {
+    callback(orianne::FtpResult(150, "Sending file contents."));
+
+    handle_write();
+  }
+
+  void handle_write() {
+    stream.read(buffer, 1024);
+    std::streamsize count = stream.gcount();
+
+    if (count == 0) {
+      callback(orianne::FtpResult(226, "Done."));
+    }
+    else {
+      if (count < 1024)
+        m_buffer = boost::asio::buffer(buffer, (size_t)count);
+
+      boost::asio::async_write(socket,
+        m_buffer,
+        boost::bind(&FileDumper::handle_write, shared_from_this()));
+    }
+  }
+
+  ~FileDumper() {
+  }
+};
+
+struct FileLoader : dumper<FileLoader> {
+  std::ofstream stream;
+  char buffer[4096];
+
+  explicit FileLoader(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
+    : dumper(cb, service), stream(path.c_str(), std::ios::out | std::ios::binary)
+  {
+  }
+
+  static boost::shared_ptr<FileLoader> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
+    return boost::shared_ptr<FileLoader>(new FileLoader(cb, service, path));
+  }
+
+  void handle_connect() {
+    callback(orianne::FtpResult(150, "Receiving file contents."));
+
+    boost::asio::async_read(socket,
+      boost::asio::buffer(buffer, 4096),
+      boost::asio::transfer_at_least(1),
+      boost::bind(&FileLoader::handle_read,
+        shared_from_this(),
+        boost::asio::placeholders::bytes_transferred));
+  }
+
+  void handle_read(std::size_t recvlen) {
+    size_t count = recvlen;
+    //std::cout << "buffer size: " << count << std::endl;
+
+    if (count == 0) {
+      callback(orianne::FtpResult(226, "Done."));
+    }
+    else {
+      stream.write(buffer, count);
+      buffer[0] = '\0';
+      boost::asio::async_read(socket,
+        boost::asio::buffer(buffer, 4096),
+        boost::asio::transfer_all(),
+        boost::bind(&FileLoader::handle_read,
+          shared_from_this(),
+          boost::asio::placeholders::bytes_transferred));
+    }
+  }
+
+  ~FileLoader() {
+  }
+};
+
+
+
+
 orianne::FtpSession::FtpSession(boost::asio::io_service& _service, boost::asio::ip::tcp::socket& socket_)
   : io_service(_service), acceptor(0), working_directory("/"), socket(socket_)
 {
@@ -221,143 +358,11 @@ static std::string get_list(const boost::filesystem::path& path) {
   return stream.str();
 }
 
-template<typename T> struct dumper : boost::enable_shared_from_this<T> {
-  boost::asio::io_service& service;
-  boost::asio::ip::tcp::socket socket;
-  boost::function<void(const orianne::FtpResult&)> callback;
-
-  explicit dumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service_)
-    : service(service_), socket(service), callback(cb)
-  {
-  }
-
-  static boost::shared_ptr<T> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service) {
-    return boost::shared_ptr<T>(new T(cb, service));
-  }
-
-  void async_wait(boost::asio::ip::tcp::acceptor& acceptor) {
-    acceptor.async_accept(socket,
-      boost::bind(&T::handle_connect, this->shared_from_this()));
-  }
-};
-
-struct DirListDumper : dumper<DirListDumper> {
-  std::string data;
-
-  explicit DirListDumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service)
-    : dumper(cb, service)
-  {
-  }
-
-  void handle_connect() {
-    boost::asio::async_write(socket,
-      boost::asio::buffer(data),
-      boost::bind(&DirListDumper::handle_write, shared_from_this()));
-    callback(orianne::FtpResult(150, "Sending directory listing."));
-  }
-
-  void handle_write() {
-    callback(orianne::FtpResult(226, "Done."));
-  }
-
-  void set_data(const std::string& data_) {
-    data = data_;
-  }
-};
-
 void orianne::FtpSession::list(boost::function<void(const orianne::FtpResult&)> cb) {
   boost::shared_ptr<DirListDumper> dumper = DirListDumper::create(cb, io_service);
   dumper->set_data(get_list(root_directory / working_directory));
   dumper->async_wait(*acceptor);
 }
-
-struct FileDumper : dumper<FileDumper> {
-  std::ifstream stream;
-  char buffer[1024];
-  boost::asio::mutable_buffers_1 m_buffer;
-
-  explicit FileDumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
-    : dumper(cb, service), stream(path.c_str(), std::ios::in | std::ios::binary), m_buffer(buffer, 1024)
-  {
-  }
-
-  static boost::shared_ptr<FileDumper> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
-    return boost::shared_ptr<FileDumper>(new FileDumper(cb, service, path));
-  }
-
-  void handle_connect() {
-    callback(orianne::FtpResult(150, "Sending file contents."));
-
-    handle_write();
-  }
-
-  void handle_write() {
-    stream.read(buffer, 1024);
-    std::streamsize count = stream.gcount();
-
-    if (count == 0) {
-      callback(orianne::FtpResult(226, "Done."));
-    }
-    else {
-      if (count < 1024)
-        m_buffer = boost::asio::buffer(buffer, (size_t)count);
-
-      boost::asio::async_write(socket,
-        m_buffer,
-        boost::bind(&FileDumper::handle_write, shared_from_this()));
-    }
-  }
-
-  ~FileDumper() {
-  }
-};
-
-struct FileLoader : dumper<FileLoader> {
-  std::ofstream stream;
-  char buffer[4096];
-
-  explicit FileLoader(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
-    : dumper(cb, service), stream(path.c_str(), std::ios::out | std::ios::binary)
-  {
-  }
-
-  static boost::shared_ptr<FileLoader> create(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
-    return boost::shared_ptr<FileLoader>(new FileLoader(cb, service, path));
-  }
-
-  void handle_connect() {
-    callback(orianne::FtpResult(150, "Receiving file contents."));
-
-    boost::asio::async_read(socket,
-      boost::asio::buffer(buffer, 4096),
-      boost::asio::transfer_at_least(1),
-      boost::bind(&FileLoader::handle_read,
-        shared_from_this(),
-        boost::asio::placeholders::bytes_transferred));
-  }
-
-  void handle_read(std::size_t recvlen) {
-    size_t count = recvlen;
-    //std::cout << "buffer size: " << count << std::endl;
-
-    if (count == 0) {
-      callback(orianne::FtpResult(226, "Done."));
-    }
-    else {
-      stream.write(buffer, count);
-      buffer[0] = '\0';
-      boost::asio::async_read(socket,
-        boost::asio::buffer(buffer, 4096),
-        boost::asio::transfer_all(),
-        boost::bind(&FileLoader::handle_read,
-          shared_from_this(),
-          boost::asio::placeholders::bytes_transferred));
-    }
-  }
-
-  ~FileLoader() {
-  }
-};
 
 void orianne::FtpSession::store(const std::string& filename, boost::function<void(const orianne::FtpResult&)> cb) {
   boost::filesystem::path path = root_directory / working_directory / filename;
