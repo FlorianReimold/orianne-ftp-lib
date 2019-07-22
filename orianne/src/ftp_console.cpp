@@ -61,15 +61,15 @@ void orianne::FtpConsole::read_line(const std::string& mesg) {
     result = session.get_size(filename);
   }
   else if (command == "LIST") {
-    session.list(boost::bind(&write_result, _1, write_message));
+    session.list(std::bind(&write_result, std::placeholders::_1, write_message));
     return;
   }
   else if (command == "RETR") {
-    session.retrieve(mesg.substr(5, mesg.length() - 6), boost::bind(&write_result, _1, write_message));
+    session.retrieve(mesg.substr(5, mesg.length() - 6), std::bind(&write_result, std::placeholders::_1, write_message));
     return;
   }
   else if (command == "STOR") {
-    session.store(mesg.substr(5, mesg.length() - 6), boost::bind(&write_result, _1, write_message));
+    session.store(mesg.substr(5, mesg.length() - 6), std::bind(&write_result, std::placeholders::_1, write_message));
     return;
   }
   else if (command == "CWD") {
@@ -110,7 +110,7 @@ void orianne::FtpConsole::read_line(const std::string& mesg) {
   write_result(result, write_message);
 }
 
-void orianne::FtpConsole::set_write_callback(boost::function<void(const std::string&)> wm) {
+void orianne::FtpConsole::set_write_callback(std::function<void(const std::string&)> wm) {
   write_message = wm;
 }
 

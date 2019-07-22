@@ -10,8 +10,8 @@ namespace orianne {
 
   class FtpConsole {
   public:
-    typedef boost::function<void(const std::string&)> write_message_func;
-    typedef boost::function<void(const std::string&, FtpSession&, write_message_func&)> command_func;
+    typedef std::function<void(const std::string&)> write_message_func;
+    typedef std::function<void(const std::string&, FtpSession&, write_message_func&)> command_func;
 
     FtpConsole(FtpSession& _session);
     void read_line(const std::string& mesg);

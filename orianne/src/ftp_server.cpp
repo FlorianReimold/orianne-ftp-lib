@@ -34,14 +34,14 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
   void handle_connect(const boost::system::error_code code, orianne::FtpServer* server) {
     std::cout << "handle_connection()" << std::endl;
 
-    console.set_write_callback(boost::bind(&connection_handler::write_message,
-      this, _1));
+    console.set_write_callback(std::bind(&connection_handler::write_message,
+      this, std::placeholders::_1));
 
     boost::asio::async_write(socket,
       boost::asio::buffer(console.greeter()),
-      boost::bind(&connection_handler::handle_write, shared_from_this(),
-        boost::asio::placeholders::error,
-        boost::asio::placeholders::bytes_transferred));
+      std::bind(&connection_handler::handle_write, shared_from_this(),
+        /*boost::asio::placeholders::error*/ std::placeholders::_1,
+        /*boost::asio::placeholders::bytes_transferred*/ std::placeholders::_2));
 
     trigger_read();
 
@@ -51,7 +51,7 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
   void trigger_read() {
     if (socket.is_open()) {
       boost::asio::async_read_until(socket, buf, "\n",
-        boost::bind(&connection_handler::handle_read, shared_from_this()));
+        std::bind(&connection_handler::handle_read, shared_from_this()));
     }
   }
 
@@ -77,9 +77,9 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
     str->append("\r\n");
     std::cout << "Message: " << *str << std::endl;
     boost::asio::async_write(socket, boost::asio::buffer(*str),
-      boost::bind(&connection_handler::dispose_write_buffer,
-        shared_from_this(), boost::asio::placeholders::error,
-        boost::asio::placeholders::bytes_transferred));
+      std::bind(&connection_handler::dispose_write_buffer,
+        shared_from_this(), /*boost::asio::placeholders::error*/ std::placeholders::_1,
+        /*boost::asio::placeholders::bytes_transferred*/ std::placeholders::_2));
   }
 
   void dispose_write_buffer(const boost::system::error_code& /*error*/,
@@ -96,6 +96,6 @@ void orianne::FtpServer::start() {
   std::shared_ptr<connection_handler>& sptr(handler);
 
   acceptor.async_accept(handler->socket,
-    boost::bind(&connection_handler::handle_connect, sptr,
-      boost::asio::placeholders::error, this));
+    std::bind(&connection_handler::handle_connect, sptr,
+      /*boost::asio::placeholders::error*/ std::placeholders::_1, this));
 }
