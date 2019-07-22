@@ -9,8 +9,6 @@
 
 #include <direct.h>
 
-using boost::asio::ip::tcp;
-
 orianne::FtpSession::FtpSession(boost::asio::io_service& _service, boost::asio::ip::tcp::socket& socket_)
   : io_service(_service), acceptor(0), working_directory("/"), socket(socket_)
 {
@@ -40,7 +38,7 @@ static std::string endpoint_to_string(boost::asio::ip::address_v4::bytes_type ad
 
 orianne::FtpResult orianne::FtpSession::set_passive() {
   if (acceptor == 0)
-    acceptor = new tcp::acceptor(io_service, tcp::endpoint(tcp::v4(), 0)); // Port = 0 makes the OS choose a free port for us!
+    acceptor = new boost::asio::ip::tcp::acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0)); // Port = 0 makes the OS choose a free port for us!
 
   std::string tmp_message = "Entering passive mode ";
   tmp_message.append(endpoint_to_string(socket.local_endpoint().address().to_v4().to_bytes(), acceptor->local_endpoint().port()));
@@ -225,7 +223,7 @@ static std::string get_list(const boost::filesystem::path& path) {
 
 template<typename T> struct dumper : boost::enable_shared_from_this<T> {
   boost::asio::io_service& service;
-  tcp::socket socket;
+  boost::asio::ip::tcp::socket socket;
   boost::function<void(const orianne::FtpResult&)> callback;
 
   explicit dumper(boost::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service_)

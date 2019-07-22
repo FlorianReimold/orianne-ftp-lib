@@ -4,11 +4,8 @@
 #include "ftp_console.h"
 #include "ftp_session.h"
 
-using boost::asio::ip::tcp;
-using namespace std;
-
 orianne::FtpServer::FtpServer(boost::asio::io_service& io_service, uint16_t port, std::string path)
-  : acceptor(io_service, tcp::endpoint(tcp::v4(), port)) {
+  : acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {
   this->path = path;
   start();
 }
@@ -27,13 +24,13 @@ struct connection_handler : boost::enable_shared_from_this<connection_handler> {
     return ptr(new connection_handler(service, path));
   }
 
-  tcp::socket socket;
+  boost::asio::ip::tcp::socket socket;
   orianne::FtpSession session;
   orianne::FtpConsole console;
   boost::asio::streambuf buf;
 
   void handle_connect(const boost::system::error_code code, orianne::FtpServer* server) {
-    cout << "handle_connection()" << endl;
+    std::cout << "handle_connection()" << std::endl;
 
     console.set_write_callback(boost::bind(&connection_handler::write_message,
       this, _1));
@@ -76,7 +73,7 @@ struct connection_handler : boost::enable_shared_from_this<connection_handler> {
     const char* buf = message.c_str();
     std::string *str = new std::string(buf);
     str->append("\r\n");
-    cout << "Message: " << *str << endl;
+    std::cout << "Message: " << *str << std::endl;
     boost::asio::async_write(socket, boost::asio::buffer(*str),
       boost::bind(&connection_handler::dispose_write_buffer,
         shared_from_this(), boost::asio::placeholders::error,
@@ -90,7 +87,7 @@ struct connection_handler : boost::enable_shared_from_this<connection_handler> {
 };
 
 void orianne::FtpServer::start() {
-  cout << "start()" << endl;
+  std::cout << "start()" << std::endl;
 
   connection_handler::ptr handler =
     connection_handler::create(acceptor.get_io_service(), path);
