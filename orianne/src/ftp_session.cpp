@@ -3,13 +3,14 @@
 #include <fstream>
 
 #include <boost/filesystem.hpp>
-#include <boost/format.hpp>
 
 #include <direct.h>
 
 #include <memory>
 #include <functional>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 
 
 template<typename T> struct dumper : std::enable_shared_from_this<T> {
@@ -344,15 +345,16 @@ static std::string get_list(const boost::filesystem::path& path) {
     stat(it->path().string().c_str(), &t_stat);
     struct tm* timeinfo = localtime(&t_stat.st_ctime);
     char date[80];
-    strftime(date, sizeof(date), "%b %e %Y", timeinfo);
+    strftime(date, sizeof(date), "%b %e %Y", timeinfo); // TODO: This is locale specific!
 
     bool dir = boost::filesystem::is_directory(it->path());
-    stream << boost::format("%crw-rw-rw-   1 %-10s %-10s %10lu %s %s\r\n")
-      % (dir ? 'd' : '-')
-      % "Orianne" % "Orianne"
-      % (dir ? 0 : file_size(it->path()))
-      % date
-      % it->path().filename().string();
+
+    stream << (dir ? 'd' : '-') << "rw-rw-rw-   1 ";
+    stream << std::setw(10) << "Orianne" << " " << std::setw(10) << "Orianne" << " ";
+    stream << std::setw(10) << (dir ? 0 : boost::filesystem::file_size(it->path())) << " ";
+    stream << date << " ";
+    stream << it->path().filename().string();
+    stream << "\r\n";
   }
   std::cout << "STR: \n" << stream.str() << std::endl;
   return stream.str();
