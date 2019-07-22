@@ -349,7 +349,7 @@ static std::string get_list(const boost::filesystem::path& path) {
     bool dir = boost::filesystem::is_directory(it->path());
     stream << boost::format("%crw-rw-rw-   1 %-10s %-10s %10lu %s %s\r\n")
       % (dir ? 'd' : '-')
-      % "iTorrent" % "iTorrent"
+      % "Orianne" % "Orianne"
       % (dir ? 0 : file_size(it->path()))
       % date
       % it->path().filename().string();
