@@ -44,7 +44,7 @@ struct DirListDumper : dumper<DirListDumper> {
   void handle_connect() {
     boost::asio::async_write(socket,
       boost::asio::buffer(data),
-      boost::bind(&DirListDumper::handle_write, shared_from_this()));
+      std::bind(&DirListDumper::handle_write, shared_from_this()));
     callback(orianne::FtpResult(150, "Sending directory listing."));
   }
 
@@ -90,7 +90,7 @@ struct FileDumper : dumper<FileDumper> {
 
       boost::asio::async_write(socket,
         m_buffer,
-        boost::bind(&FileDumper::handle_write, shared_from_this()));
+        std::bind(&FileDumper::handle_write, shared_from_this()));
     }
   }
 
@@ -117,9 +117,9 @@ struct FileLoader : dumper<FileLoader> {
     boost::asio::async_read(socket,
       boost::asio::buffer(buffer, 4096),
       boost::asio::transfer_at_least(1),
-      boost::bind(&FileLoader::handle_read,
+      std::bind(static_cast<void(FileLoader::*)(size_t)>(&FileLoader::handle_read),
         shared_from_this(),
-        boost::asio::placeholders::bytes_transferred));
+        std::placeholders::_2));
   }
 
   void handle_read(std::size_t recvlen) {
@@ -135,9 +135,9 @@ struct FileLoader : dumper<FileLoader> {
       boost::asio::async_read(socket,
         boost::asio::buffer(buffer, 4096),
         boost::asio::transfer_all(),
-        boost::bind(&FileLoader::handle_read,
+        std::bind(static_cast<void(FileLoader::*)(size_t)>(&FileLoader::handle_read),
           shared_from_this(),
-          boost::asio::placeholders::bytes_transferred));
+          std::placeholders::_2));
     }
   }
 
