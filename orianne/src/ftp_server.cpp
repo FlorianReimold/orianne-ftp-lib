@@ -1,10 +1,9 @@
-#include "stdafx.h"
-
 #include <orianne/ftp_server.h>
 #include "ftp_console.h"
 #include "ftp_session.h"
 
 #include <memory>
+#include <iostream>
 
 orianne::FtpServer::FtpServer(boost::asio::io_service& io_service, uint16_t port, std::string path)
   : acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {

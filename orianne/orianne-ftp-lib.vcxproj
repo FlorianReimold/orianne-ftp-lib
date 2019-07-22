@@ -22,13 +22,11 @@
     <ClInclude Include="include\orianne\ftp_server.h" />
     <ClInclude Include="src\ftp_console.h" />
     <ClInclude Include="src\ftp_session.h" />
-    <ClInclude Include="src\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ftp_console.cpp" />
     <ClCompile Include="src\ftp_server.cpp" />
     <ClCompile Include="src\ftp_session.cpp" />
-    <ClCompile Include="src\stdafx.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E7EA473F-41E9-41F4-97FC-7BB769961B81}</ProjectGuid>

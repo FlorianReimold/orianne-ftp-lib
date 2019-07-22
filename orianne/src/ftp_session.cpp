@@ -1,5 +1,3 @@
-#include "stdafx.h"
-
 #include "ftp_session.h"
 
 #include <fstream>
@@ -11,6 +9,7 @@
 
 #include <memory>
 #include <functional>
+#include <iostream>
 
 
 template<typename T> struct dumper : std::enable_shared_from_this<T> {

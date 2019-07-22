@@ -1,8 +1,7 @@
 #pragma once
 
-#include "stdafx.h"
-
 #include <boost/filesystem.hpp>
+#include <boost/asio.hpp>
 
 #include <functional>
 

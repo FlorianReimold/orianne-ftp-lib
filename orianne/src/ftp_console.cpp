@@ -1,6 +1,7 @@
-#include "stdafx.h"
-
 #include "ftp_console.h"
+
+#include <sstream>
+#include <iostream>
 
 orianne::FtpConsole::FtpConsole(FtpSession& _session)
   : session(_session), greeter_("220 orianne Ready.\r\n")

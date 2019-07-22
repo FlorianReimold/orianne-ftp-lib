@@ -1,7 +1,5 @@
 #pragma once
 
-#include "stdafx.h"
-
 #include "ftp_session.h"
 
 #include <map>
