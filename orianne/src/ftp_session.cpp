@@ -4,7 +4,9 @@
 
 #include <boost/filesystem.hpp>
 
+#ifdef WIN32
 #include <direct.h>
+#endif // WIN32
 
 #include <memory>
 #include <functional>
@@ -317,9 +319,9 @@ orianne::FtpResult orianne::FtpSession::get_working_directory() {
 orianne::FtpResult orianne::FtpSession::get_system() {
 #if defined _WIN32 || defined _WIN64
   return orianne::FtpResult(215, "WIN32");
-#elif __ANDROID__ 
+#elif __ANDROID__
   return orianne::FtpResult(215, "LINUX");
-#elif __linux__ 
+#elif __linux__
   return orianne::FtpResult(215, "LINUX");
 #elif __APPLE__ && __MACH__
   return orianne::FtpResult(215, "MACOS");

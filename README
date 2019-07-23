@@ -15,3 +15,12 @@ To compile, you will need boost >= 1.46.1.
 
 For Visual Studio users, simply open the mftp.sln file.
 Unix users can use the Makefile in the mftp directory. Simply change to CC variable to switch compilers.
+
+# Compiling
+## Linux
+Install cmake and boost:
+```bash
+sudo apt install cmake
+sudo apt install libboost-all-dev
+```
+
