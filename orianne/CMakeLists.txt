@@ -8,9 +8,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(Threads REQUIRED)
 
-find_package(Boost 1.46.0 REQUIRED COMPONENTS filesystem)
-
-find_package(Boost REQUIRED)
+find_package(Boost 1.46.0 REQUIRED COMPONENTS filesystem system)
+if (Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIR})
+endif()
 
 set (includes
     include/orianne/ftp_server.h
@@ -29,10 +30,10 @@ add_library (${PROJECT_NAME}
     ${sources}
 )
 
-message(STATUS "Boost Libraries: ${Boost_LIBRARIES}")
-
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE Boost::filesystem
+    PRIVATE
+	    Boost::system
+		Boost::filesystem
 )
 
 #target_compile_definitions(${PROJECT_NAME} ASIO_STANDALONE)
