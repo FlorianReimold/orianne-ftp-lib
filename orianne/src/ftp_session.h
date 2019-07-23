@@ -27,7 +27,18 @@ namespace orianne {
     std::string message;
   };
 
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  /// Ftp Session
+  //////////////////////////////////////////////////////////////////////////////
+
   class FtpSession {
+
+  //////////////////////////////////
+  /// Member variables
+  //////////////////////////////////
+  private:
     boost::asio::io_service& io_service;
     boost::asio::ip::tcp::acceptor* acceptor;
     boost::asio::ip::tcp::socket& socket;
@@ -35,12 +46,24 @@ namespace orianne {
     boost::filesystem::path root_directory;
     boost::filesystem::path working_directory;
 
+    std::string rename_from_path;
+
+  //////////////////////////////////
+  /// Constructor
+  //////////////////////////////////
   public:
     explicit FtpSession(boost::asio::io_service&, boost::asio::ip::tcp::socket& socket);
 
+  //////////////////////////////////
+  /// public API
+  //////////////////////////////////
+  public:
     void set_root_directory(const boost::filesystem::path& root_directory);
-    std::string rename_from_path;
 
+  //////////////////////////////////
+  /// FTP console callbacks
+  //////////////////////////////////
+  public:
     FtpResult set_username(const std::string& username);
     FtpResult set_password(const std::string& password);
     FtpResult quit();
@@ -65,6 +88,9 @@ namespace orianne {
     void store(const std::string& filename, std::function<void(const FtpResult&)> cb);
     void list(std::function<void(const FtpResult&)> cb);
 
+  //////////////////////////////////
+  /// Helper functions
+  //////////////////////////////////
   private:
     boost::filesystem::path to_local_path(const std::string& ftp_path);
   };

@@ -14,6 +14,9 @@
 #include <iomanip>
 #include <sstream>
 
+////////////////////////////////////////////////////////////////////////////////
+/// Dumper Classes
+////////////////////////////////////////////////////////////////////////////////
 
 template<typename T> struct dumper : std::enable_shared_from_this<T> {
   boost::asio::io_service& service;
@@ -148,6 +151,9 @@ struct FileLoader : dumper<FileLoader> {
 };
 
 
+////////////////////////////////////////////////////////////////////////////////
+/// Ftp Session
+////////////////////////////////////////////////////////////////////////////////
 
 
 orianne::FtpSession::FtpSession(boost::asio::io_service& _service, boost::asio::ip::tcp::socket& socket_)
@@ -155,15 +161,17 @@ orianne::FtpSession::FtpSession(boost::asio::io_service& _service, boost::asio::
 {
 }
 
-void orianne::FtpSession::set_root_directory(boost::filesystem::path const& directory) {
+void orianne::FtpSession::set_root_directory(boost::filesystem::path const& directory)
+{
   root_directory = directory;
 }
 
-orianne::FtpResult orianne::FtpSession::set_username(const std::string& username) {
+orianne::FtpResult orianne::FtpSession::set_username(const std::string& username)
+{
   return orianne::FtpResult(331, "Please enter your password.");
 }
 
-orianne::FtpResult orianne::FtpSession::set_password(const std::string& username) {
+orianne::FtpResult orianne::FtpSession::set_password(const std::string& password) {
   return orianne::FtpResult(230, "Login successful.");
 }
 
@@ -344,17 +352,30 @@ static std::string get_list(const boost::filesystem::path& path) {
 
   for (boost::filesystem::directory_iterator it(path); it != boost::filesystem::directory_iterator(); it++) {
     struct stat t_stat;
-    stat(it->path().string().c_str(), &t_stat);
-    struct tm* timeinfo = localtime(&t_stat.st_ctime);
-    char date[80];
-    strftime(date, sizeof(date), "%b %e %Y", timeinfo); // TODO: This is locale specific!
+
+    std::string time_string;
+    size_t file_size(0);
+
+    if (stat(it->path().string().c_str(), &t_stat) == 0)
+    {
+      struct tm* timeinfo = localtime(&t_stat.st_ctime);
+      char date[80];
+      strftime(date, sizeof(date), "%b %e %Y", timeinfo); // TODO: This is locale specific!
+
+      time_string = date;
+      file_size = t_stat.st_size;
+    }
+    else
+    {
+      time_string = "Jan 01 1970";
+    }
 
     bool dir = boost::filesystem::is_directory(it->path());
 
     stream << (dir ? 'd' : '-') << "rw-rw-rw-   1 ";
     stream << std::setw(10) << "Orianne" << " " << std::setw(10) << "Orianne" << " ";
-    stream << std::setw(10) << (dir ? 0 : boost::filesystem::file_size(it->path())) << " ";
-    stream << date << " ";
+    stream << std::setw(10) << (dir ? 0 : file_size) << " ";
+    stream << time_string << " ";
     stream << it->path().filename().string();
     stream << "\r\n";
   }
