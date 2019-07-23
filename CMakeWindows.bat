@@ -6,3 +6,4 @@ set "BOOST_LIBRARYDIR=D:/Projects/Grid/grid_external/boost/1.62.0/lib/v140/Win32
 
 cmake ..
 cd ..
+pause
