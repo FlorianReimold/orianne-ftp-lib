@@ -11,7 +11,6 @@ set(Boost_USE_STATIC_LIBS   ON)
 find_package(Boost 1.46.0 REQUIRED COMPONENTS filesystem system)
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIR})
-    link_directories(${Boost_LIBRARY_DIRS})
 endif()
 
 # Public API include directory
@@ -42,9 +41,8 @@ target_link_libraries(${PROJECT_NAME}
 
 #target_compile_definitions(${PROJECT_NAME} ASIO_STANDALONE)
 
-# Add Boost include and link directory
+# Add Boost include directory
 target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIR})
-target_link_directories   (${PROJECT_NAME} PUBLIC ${Boost_LIBRARY_DIRS})
 
 # Add own public include directory
 target_include_directories(${PROJECT_NAME} PUBLIC include/)
