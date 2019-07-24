@@ -13,6 +13,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <chrono>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -295,13 +296,60 @@ namespace Filesystem
     std::string timeString() const
     {
       if (!is_ok_)
-        return "Jan 01 1970";
+        return "Jan  1 1970";
 
-      struct tm* timeinfo = localtime(&file_status_.st_ctime);
+      // The FTP Time format can be:
+      // 
+      //     MMM DD hh:mm
+      //   OR
+      //     MMM DD  YYYY
+      //   OR
+      //     MMM DD YYYY
+      //
+      // This means, that we can only return the time for files with the same
+      // year as the current year.
+      // 
+      // https://files.stairways.com/other/ftp-list-specs-info.txt
+      
+      auto now = std::chrono::system_clock::now();
+      time_t now_time_t = std::chrono::system_clock::to_time_t(now);
+      struct tm* now_timeinfo = localtime(&now_time_t);
+      int current_year = now_timeinfo->tm_year;
+
+      struct tm* file_timeinfo = localtime(&file_status_.st_ctime);
+      int file_year = file_timeinfo->tm_year;
+
+      // Hardcoded english month names, because returning a localized string by strftime here may break certain FTP clients
+      static std::string month_names[] =
+      {
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      };
+
+      // Use strftime for the day and year / time
       char date[80];
-      strftime(date, sizeof(date), "%b %e %Y", timeinfo); // TODO: This is locale specific!
+      if (file_year == current_year)
+      {
+        // We are allowed to return the time!
+        strftime(date, sizeof(date), " %e %R", file_timeinfo);
+      }
+      else
+      {
+        // We must not return the time, only the date :(
+        strftime(date, sizeof(date), " %e %Y", file_timeinfo);
+      }
 
-      return date;
+      return month_names[file_timeinfo->tm_mon] + std::string(date);
     }
 
     ~FileStatus() {}
