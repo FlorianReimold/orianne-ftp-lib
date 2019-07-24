@@ -16,7 +16,11 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifndef WIN32
 #include <dirent.h>
+#endif // !WIN32
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Dumper Classes
