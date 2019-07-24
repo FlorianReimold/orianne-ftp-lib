@@ -225,25 +225,25 @@ namespace Filesystem
     }
 
 #ifdef WIN32
-    bool permissionRootRead()     const { return bool(file_status_.st_mode & S_IREAD); }
-    bool permissionRootWrite()    const { return bool(file_status_.st_mode & S_IWRITE); }
-    bool permissionRootExecute()  const { return bool(file_status_.st_mode & S_IEXEC); }
-    bool permissionGroupRead()    const { return bool(file_status_.st_mode & S_IREAD); }
-    bool permissionGroupWrite()   const { return bool(file_status_.st_mode & S_IWRITE); }
-    bool permissionGroupExecute() const { return bool(file_status_.st_mode & S_IEXEC); }
-    bool permissionOwnerRead()    const { return bool(file_status_.st_mode & S_IREAD); }
-    bool permissionOwnerWrite()   const { return bool(file_status_.st_mode & S_IWRITE); }
-    bool permissionOwnerExecute() const { return bool(file_status_.st_mode & S_IEXEC); }
+    bool permissionRootRead()     const { return 0 != (file_status_.st_mode & S_IREAD); }
+    bool permissionRootWrite()    const { return 0 != (file_status_.st_mode & S_IWRITE); }
+    bool permissionRootExecute()  const { return 0 != (file_status_.st_mode & S_IEXEC); }
+    bool permissionGroupRead()    const { return 0 != (file_status_.st_mode & S_IREAD); }
+    bool permissionGroupWrite()   const { return 0 != (file_status_.st_mode & S_IWRITE); }
+    bool permissionGroupExecute() const { return 0 != (file_status_.st_mode & S_IEXEC); }
+    bool permissionOwnerRead()    const { return 0 != (file_status_.st_mode & S_IREAD); }
+    bool permissionOwnerWrite()   const { return 0 != (file_status_.st_mode & S_IWRITE); }
+    bool permissionOwnerExecute() const { return 0 != (file_status_.st_mode & S_IEXEC); }
 #else // WIN32
-    bool permissionRootRead()     const { return bool(file_status_.st_mode & S_IRUSR); }
-    bool permissionRootWrite()    const { return bool(file_status_.st_mode & S_IWUSR); }
-    bool permissionRootExecute()  const { return bool(file_status_.st_mode & S_IXUSR); }
-    bool permissionGroupRead()    const { return bool(file_status_.st_mode & S_IRGRP); }
-    bool permissionGroupWrite()   const { return bool(file_status_.st_mode & S_IWGRP); }
-    bool permissionGroupExecute() const { return bool(file_status_.st_mode & S_IXGRP); }
-    bool permissionOwnerRead()    const { return bool(file_status_.st_mode & S_IROTH); }
-    bool permissionOwnerWrite()   const { return bool(file_status_.st_mode & S_IWOTH); }
-    bool permissionOwnerExecute() const { return bool(file_status_.st_mode & S_IXOTH); }
+    bool permissionRootRead()     const { return 0 != (file_status_.st_mode & S_IRUSR); }
+    bool permissionRootWrite()    const { return 0 != (file_status_.st_mode & S_IWUSR); }
+    bool permissionRootExecute()  const { return 0 != (file_status_.st_mode & S_IXUSR); }
+    bool permissionGroupRead()    const { return 0 != (file_status_.st_mode & S_IRGRP); }
+    bool permissionGroupWrite()   const { return 0 != (file_status_.st_mode & S_IWGRP); }
+    bool permissionGroupExecute() const { return 0 != (file_status_.st_mode & S_IXGRP); }
+    bool permissionOwnerRead()    const { return 0 != (file_status_.st_mode & S_IROTH); }
+    bool permissionOwnerWrite()   const { return 0 != (file_status_.st_mode & S_IWOTH); }
+    bool permissionOwnerExecute() const { return 0 != (file_status_.st_mode & S_IXOTH); }
 #endif // WIN32
 
 
