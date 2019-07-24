@@ -14,6 +14,9 @@
 #include <iomanip>
 #include <sstream>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Dumper Classes
 ////////////////////////////////////////////////////////////////////////////////
@@ -351,19 +354,84 @@ static std::string get_list(const boost::filesystem::path& path) {
     return "";
 
   for (boost::filesystem::directory_iterator it(path); it != boost::filesystem::directory_iterator(); it++) {
-    struct stat t_stat;
+#ifdef WIN32
+    struct __stat64 file_status;
+#else // WIN32
+    struct stat file_status;
+#endif 
 
-    std::string time_string;
-    size_t file_size(0);
-
-    if (stat(it->path().string().c_str(), &t_stat) == 0)
+    enum class FileType
     {
-      struct tm* timeinfo = localtime(&t_stat.st_ctime);
+      Unknown,
+      RegularFile,
+      Dir,
+      CharacterDevice,
+      BlockDevice,
+      Fifo,
+      SymbolicLink,
+      Socket
+    };
+
+    FileType    file_type(FileType::Unknown);
+    std::string time_string;
+    int64_t     file_size(0);
+    std::string permission_string(size_t(9), '-');
+
+#ifdef WIN32
+    const int error_code = _stat64(it->path().string().c_str(),  &file_status);
+#else // WIN32
+    const int error_code = stat(it->path().string().c_str(), &file_status);
+#endif // WIN32
+
+    if (error_code == 0)
+    {
+      struct tm* timeinfo = localtime(&file_status.st_ctime);
       char date[80];
       strftime(date, sizeof(date), "%b %e %Y", timeinfo); // TODO: This is locale specific!
 
       time_string = date;
-      file_size = t_stat.st_size;
+      file_size = file_status.st_size;
+
+      switch (file_status.st_mode & S_IFMT) {
+      case S_IFCHR:  file_type = FileType::CharacterDevice; break;
+      case S_IFDIR:  file_type = FileType::Dir;             break;
+      case S_IFREG:  file_type = FileType::RegularFile;     break;
+#ifndef WIN32
+      case S_IFBLK:  file_type = FileType::BlockDevice;     break;
+      case S_IFIFO:  file_type = FileType::Fifo;            break;
+      case S_IFLNK:  file_type = FileType::SymbolicLink;    break;
+      case S_IFSOCK: file_type = FileType::Socket;          break;
+#endif // !WIN32
+      default:       file_type = FileType::Unknown;         break;
+      }
+
+#ifdef WIN32
+      // Root
+      permission_string[0] = (file_status.st_mode & S_IREAD)  ? 'r' : '-';
+      permission_string[1] = (file_status.st_mode & S_IWRITE) ? 'w' : '-';
+      permission_string[2] = (file_status.st_mode & S_IEXEC)  ? 'x' : '-';
+      // Group
+      permission_string[3] = (file_status.st_mode & S_IREAD)  ? 'r' : '-';
+      permission_string[4] = (file_status.st_mode & S_IWRITE) ? 'w' : '-';
+      permission_string[5] = (file_status.st_mode & S_IEXEC)  ? 'x' : '-';
+      // Owner
+      permission_string[6] = (file_status.st_mode & S_IREAD)  ? 'r' : '-';
+      permission_string[7] = (file_status.st_mode & S_IWRITE) ? 'w' : '-';
+      permission_string[8] = (file_status.st_mode & S_IEXEC)  ? 'x' : '-';
+#else // WIN32
+      // Root
+      permission_string[0] = (file_status.st_mode & S_IRUSR) ? 'r' : '-';
+      permission_string[1] = (file_status.st_mode & S_IWUSR) ? 'w' : '-';
+      permission_string[2] = (file_status.st_mode & S_IXUSR) ? 'x' : '-';
+      // Group
+      permission_string[3] = (file_status.st_mode & S_IRGRP) ? 'r' : '-';
+      permission_string[4] = (file_status.st_mode & S_IWGRP) ? 'w' : '-';
+      permission_string[5] = (file_status.st_mode & S_IXGRP) ? 'x' : '-';
+      // Owner
+      permission_string[6] = (file_status.st_mode & S_IROTH) ? 'r' : '-';
+      permission_string[7] = (file_status.st_mode & S_IWOTH) ? 'w' : '-';
+      permission_string[8] = (file_status.st_mode & S_IXOTH) ? 'x' : '-';
+#endif // WIN32
     }
     else
     {
@@ -372,7 +440,7 @@ static std::string get_list(const boost::filesystem::path& path) {
 
     bool dir = boost::filesystem::is_directory(it->path());
 
-    stream << (dir ? 'd' : '-') << "rw-rw-rw-   1 ";
+    stream << ((file_type == FileType::Dir) ? 'd' : '-') << permission_string << "   1 ";
     stream << std::setw(10) << "Orianne" << " " << std::setw(10) << "Orianne" << " ";
     stream << std::setw(10) << (dir ? 0 : file_size) << " ";
     stream << time_string << " ";

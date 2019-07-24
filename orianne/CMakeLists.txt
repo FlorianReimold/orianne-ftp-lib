@@ -40,6 +40,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 #target_compile_definitions(${PROJECT_NAME} ASIO_STANDALONE)
+target_compile_definitions(${PROJECT_NAME} PUBLIC __USE_FILE_OFFSET64=1)
 
 # Add Boost include directory
 target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIR})
