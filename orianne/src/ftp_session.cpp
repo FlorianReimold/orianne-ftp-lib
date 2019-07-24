@@ -157,9 +157,8 @@ struct FileLoader : dumper<FileLoader> {
 /// Filesystem
 ////////////////////////////////////////////////////////////////////////////////
 
-class FileStatus
+namespace Filesystem
 {
-public:
   enum class FileType
   {
     Unknown,
@@ -172,141 +171,171 @@ public:
     Socket
   };
 
-  FileStatus(const std::string& path)
+  class FileStatus
   {
+  public:
+    FileStatus(const std::string& path)
+    {
 #ifdef WIN32
-    const int error_code = _stat64(path.c_str(), &file_status_);
+      const int error_code = _stat64(path.c_str(), &file_status_);
 #else // WIN32
-    const int error_code = stat(path.c_str(), &file_status_);
+      const int error_code = stat(path.c_str(), &file_status_);
 #endif // WIN32
-    is_ok_ = (error_code == 0);
-  }
-
-  bool isOk() const
-  {
-    return is_ok_;
-  }
-
-  FileType type() const
-  {
-    if (!is_ok_)
-      return FileType::Unknown;
-
-    switch (file_status_.st_mode & S_IFMT) {
-    case S_IFREG:  return FileType::RegularFile;
-    case S_IFDIR:  return FileType::Dir;
-    case S_IFCHR:  return FileType::CharacterDevice;
-#ifndef WIN32
-    case S_IFBLK:  return FileType::BlockDevice;
-    case S_IFIFO:  return FileType::Fifo;
-    case S_IFLNK:  return FileType::SymbolicLink;
-    case S_IFSOCK: return FileType::Socket;
-#endif // !WIN32
-    default:       return FileType::Unknown;
+      is_ok_ = (error_code == 0);
     }
 
-  }
+    bool isOk() const
+    {
+      return is_ok_;
+    }
 
-  int64_t fileSize() const
-  {
-    if (!is_ok_)
-      return 0;
+    FileType type() const
+    {
+      if (!is_ok_)
+        return FileType::Unknown;
 
-    return file_status_.st_size;
-  }
+      switch (file_status_.st_mode & S_IFMT) {
+      case S_IFREG:  return FileType::RegularFile;
+      case S_IFDIR:  return FileType::Dir;
+      case S_IFCHR:  return FileType::CharacterDevice;
+#ifndef WIN32
+      case S_IFBLK:  return FileType::BlockDevice;
+      case S_IFIFO:  return FileType::Fifo;
+      case S_IFLNK:  return FileType::SymbolicLink;
+      case S_IFSOCK: return FileType::Socket;
+#endif // !WIN32
+      default:       return FileType::Unknown;
+      }
+
+    }
+
+    int64_t fileSize() const
+    {
+      if (!is_ok_)
+        return 0;
+
+      return file_status_.st_size;
+    }
 
 #ifdef WIN32
-  bool permissionRootRead()     const { return bool(file_status_.st_mode & S_IREAD); }
-  bool permissionRootWrite()    const { return bool(file_status_.st_mode & S_IWRITE); }
-  bool permissionRootExecute()  const { return bool(file_status_.st_mode & S_IEXEC); }
-  bool permissionGroupRead()    const { return bool(file_status_.st_mode & S_IREAD); }
-  bool permissionGroupWrite()   const { return bool(file_status_.st_mode & S_IWRITE); }
-  bool permissionGroupExecute() const { return bool(file_status_.st_mode & S_IEXEC); }
-  bool permissionOwnerRead()    const { return bool(file_status_.st_mode & S_IREAD); }
-  bool permissionOwnerWrite()   const { return bool(file_status_.st_mode & S_IWRITE); }
-  bool permissionOwnerExecute() const { return bool(file_status_.st_mode & S_IEXEC); }
+    bool permissionRootRead()     const { return bool(file_status_.st_mode & S_IREAD); }
+    bool permissionRootWrite()    const { return bool(file_status_.st_mode & S_IWRITE); }
+    bool permissionRootExecute()  const { return bool(file_status_.st_mode & S_IEXEC); }
+    bool permissionGroupRead()    const { return bool(file_status_.st_mode & S_IREAD); }
+    bool permissionGroupWrite()   const { return bool(file_status_.st_mode & S_IWRITE); }
+    bool permissionGroupExecute() const { return bool(file_status_.st_mode & S_IEXEC); }
+    bool permissionOwnerRead()    const { return bool(file_status_.st_mode & S_IREAD); }
+    bool permissionOwnerWrite()   const { return bool(file_status_.st_mode & S_IWRITE); }
+    bool permissionOwnerExecute() const { return bool(file_status_.st_mode & S_IEXEC); }
 #else // WIN32
-  bool permissionRootRead()     const { return bool(file_status_.st_mode & S_IRUSR); }
-  bool permissionRootWrite()    const { return bool(file_status_.st_mode & S_IWUSR); }
-  bool permissionRootExecute()  const { return bool(file_status_.st_mode & S_IXUSR); }
-  bool permissionGroupRead()    const { return bool(file_status_.st_mode & S_IRGRP); }
-  bool permissionGroupWrite()   const { return bool(file_status_.st_mode & S_IWGRP); }
-  bool permissionGroupExecute() const { return bool(file_status_.st_mode & S_IXGRP); }
-  bool permissionOwnerRead()    const { return bool(file_status_.st_mode & S_IROTH); }
-  bool permissionOwnerWrite()   const { return bool(file_status_.st_mode & S_IWOTH); }
-  bool permissionOwnerExecute() const { return bool(file_status_.st_mode & S_IXOTH); }
+    bool permissionRootRead()     const { return bool(file_status_.st_mode & S_IRUSR); }
+    bool permissionRootWrite()    const { return bool(file_status_.st_mode & S_IWUSR); }
+    bool permissionRootExecute()  const { return bool(file_status_.st_mode & S_IXUSR); }
+    bool permissionGroupRead()    const { return bool(file_status_.st_mode & S_IRGRP); }
+    bool permissionGroupWrite()   const { return bool(file_status_.st_mode & S_IWGRP); }
+    bool permissionGroupExecute() const { return bool(file_status_.st_mode & S_IXGRP); }
+    bool permissionOwnerRead()    const { return bool(file_status_.st_mode & S_IROTH); }
+    bool permissionOwnerWrite()   const { return bool(file_status_.st_mode & S_IWOTH); }
+    bool permissionOwnerExecute() const { return bool(file_status_.st_mode & S_IXOTH); }
 #endif // WIN32
 
 
-  std::string permissionString() const
-  {
-    std::string permission_string(9, '-');
+    std::string permissionString() const
+    {
+      std::string permission_string(9, '-');
 
-    if (!is_ok_)
+      if (!is_ok_)
+        return permission_string;
+
+#ifdef WIN32
+      // Root
+      permission_string[0] = (file_status_.st_mode & S_IREAD)  ? 'r' : '-';
+      permission_string[1] = (file_status_.st_mode & S_IWRITE) ? 'w' : '-';
+      permission_string[2] = (file_status_.st_mode & S_IEXEC)  ? 'x' : '-';
+      // Group
+      permission_string[3] = (file_status_.st_mode & S_IREAD)  ? 'r' : '-';
+      permission_string[4] = (file_status_.st_mode & S_IWRITE) ? 'w' : '-';
+      permission_string[5] = (file_status_.st_mode & S_IEXEC)  ? 'x' : '-';
+      // Owner
+      permission_string[6] = (file_status_.st_mode & S_IREAD)  ? 'r' : '-';
+      permission_string[7] = (file_status_.st_mode & S_IWRITE) ? 'w' : '-';
+      permission_string[8] = (file_status_.st_mode & S_IEXEC)  ? 'x' : '-';
+#else // WIN32
+      // Root
+      permission_string[0] = (file_status_.st_mode & S_IRUSR) ? 'r' : '-';
+      permission_string[1] = (file_status_.st_mode & S_IWUSR) ? 'w' : '-';
+      permission_string[2] = (file_status_.st_mode & S_IXUSR) ? 'x' : '-';
+      // Group
+      permission_string[3] = (file_status_.st_mode & S_IRGRP) ? 'r' : '-';
+      permission_string[4] = (file_status_.st_mode & S_IWGRP) ? 'w' : '-';
+      permission_string[5] = (file_status_.st_mode & S_IXGRP) ? 'x' : '-';
+      // Owner
+      permission_string[6] = (file_status_.st_mode & S_IROTH) ? 'r' : '-';
+      permission_string[7] = (file_status_.st_mode & S_IWOTH) ? 'w' : '-';
+      permission_string[8] = (file_status_.st_mode & S_IXOTH) ? 'x' : '-';
+#endif // WIN32
       return permission_string;
+    }
 
+    std::string ownerString() const
+    {
+      return "Orianne";
+    }
+
+    std::string groupString() const
+    {
+      return "Orianne";
+    }
+
+    std::string timeString() const
+    {
+      if (!is_ok_)
+        return "Jan 01 1970";
+
+      struct tm* timeinfo = localtime(&file_status_.st_ctime);
+      char date[80];
+      strftime(date, sizeof(date), "%b %e %Y", timeinfo); // TODO: This is locale specific!
+
+      return date;
+    }
+
+    ~FileStatus() {}
+
+  private:
+    bool is_ok_;
 #ifdef WIN32
-    // Root
-    permission_string[0] = (file_status_.st_mode & S_IREAD)  ? 'r' : '-';
-    permission_string[1] = (file_status_.st_mode & S_IWRITE) ? 'w' : '-';
-    permission_string[2] = (file_status_.st_mode & S_IEXEC)  ? 'x' : '-';
-    // Group
-    permission_string[3] = (file_status_.st_mode & S_IREAD)  ? 'r' : '-';
-    permission_string[4] = (file_status_.st_mode & S_IWRITE) ? 'w' : '-';
-    permission_string[5] = (file_status_.st_mode & S_IEXEC)  ? 'x' : '-';
-    // Owner
-    permission_string[6] = (file_status_.st_mode & S_IREAD)  ? 'r' : '-';
-    permission_string[7] = (file_status_.st_mode & S_IWRITE) ? 'w' : '-';
-    permission_string[8] = (file_status_.st_mode & S_IEXEC)  ? 'x' : '-';
+    struct __stat64 file_status_;
 #else // WIN32
-    // Root
-    permission_string[0] = (file_status_.st_mode & S_IRUSR)  ? 'r' : '-';
-    permission_string[1] = (file_status_.st_mode & S_IWUSR)  ? 'w' : '-';
-    permission_string[2] = (file_status_.st_mode & S_IXUSR)  ? 'x' : '-';
-    // Group
-    permission_string[3] = (file_status_.st_mode & S_IRGRP)  ? 'r' : '-';
-    permission_string[4] = (file_status_.st_mode & S_IWGRP)  ? 'w' : '-';
-    permission_string[5] = (file_status_.st_mode & S_IXGRP)  ? 'x' : '-';
-    // Owner
-    permission_string[6] = (file_status_.st_mode & S_IROTH)  ? 'r' : '-';
-    permission_string[7] = (file_status_.st_mode & S_IWOTH)  ? 'w' : '-';
-    permission_string[8] = (file_status_.st_mode & S_IXOTH)  ? 'x' : '-';
-#endif // WIN32
-    return permission_string;
-  }
-
-  std::string ownerString() const
-  {
-    return "Orianne";
-  }
-
-  std::string groupString() const
-  {
-    return "Orianne";
-  }
-
-  std::string timeString() const
-  {
-    if (!is_ok_)
-      return "Jan 01 1970";
-
-    struct tm* timeinfo = localtime(&file_status_.st_ctime);
-    char date[80];
-    strftime(date, sizeof(date), "%b %e %Y", timeinfo); // TODO: This is locale specific!
-
-    return date;
-  }
-
-  ~FileStatus() {}
-
-private:
-  bool is_ok_;
-#ifdef WIN32
-  struct __stat64 file_status_;
-#else // WIN32
-  struct stat file_status_;
+    struct stat file_status_;
 #endif 
-};
+  };
+
+  std::map<std::string, FileStatus> dirContent(const std::string& path)
+  {
+    std::map<std::string, FileStatus> content;
+#ifdef WIN32
+    std::string find_file_path = path + "\\*";
+    std::replace(find_file_path.begin(), find_file_path.end(), '/', '\\');
+
+    HANDLE hFind;
+    WIN32_FIND_DATA ffd;
+    hFind = FindFirstFile(find_file_path.c_str(), &ffd);
+    if (hFind == INVALID_HANDLE_VALUE)
+    {
+      std::cerr << "FindFirstFile Error" << std::endl;
+      return content;
+    }
+
+    do
+    {
+      std::string file_name(ffd.cFileName);
+      content.emplace(std::string(ffd.cFileName), FileStatus(path + "\\" + std::string(ffd.cFileName)));
+    } while (FindNextFile(hFind, &ffd) != 0);
+#endif // WIN32
+
+    return content;
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Ftp Session
@@ -355,12 +384,12 @@ orianne::FtpResult orianne::FtpSession::set_passive() {
 orianne::FtpResult orianne::FtpSession::get_size(const std::string& filename) {
   auto local_path = to_local_path(filename);
 
-  FileStatus file_status(local_path.string());
+  Filesystem::FileStatus file_status(local_path.string());
 
   if (!file_status.isOk())
     return orianne::FtpResult(550, "Get Size Error: File does not exist or permission denied.");
 
-  if (file_status.type() != FileStatus::FileType::RegularFile)
+  if (file_status.type() != Filesystem::FileType::RegularFile)
     return orianne::FtpResult(550, "Get Size Error: The resource is no regular file.");
 
   return orianne::FtpResult(213, std::to_string(file_status.fileSize()));
@@ -388,12 +417,12 @@ orianne::FtpResult orianne::FtpSession::change_working_directory(const std::stri
   }
 
   auto local_path = to_local_path(actual_new_working_dir.string());
-  FileStatus file_status(local_path.string());
+  Filesystem::FileStatus file_status(local_path.string());
 
   if (!file_status.isOk())
     return orianne::FtpResult(550, "Failed ot change directory: The given resource does not exist or permission denied.");
 
-  if (file_status.type() != FileStatus::FileType::Dir)
+  if (file_status.type() != Filesystem::FileType::Dir)
     return orianne::FtpResult(550, "Failed ot change directory: The given resource is not a directory.");
 
   if (!file_status.permissionGroupExecute())
@@ -517,17 +546,22 @@ orianne::FtpResult orianne::FtpSession::get_system() {
 static std::string get_list(const boost::filesystem::path& path) {
   std::stringstream stream;
 
-  if (!boost::filesystem::is_directory(path))
-    return "";
+  Filesystem::FileStatus dir_status(path.string());
+  if (dir_status.type() != Filesystem::FileType::Dir)
+    return ""; // TODO: return proper error code!
 
-  for (boost::filesystem::directory_iterator it(path); it != boost::filesystem::directory_iterator(); it++) {
-    FileStatus file_status(it->path().string());
+  auto dir_content = Filesystem::dirContent(path.string());
 
-    stream << ((file_status.type() == FileStatus::FileType::Dir) ? 'd' : '-') << file_status.permissionString() << "   1 ";
+  for (const auto& entry : dir_content)
+  {
+    const std::string& filename(entry.first);
+    const Filesystem::FileStatus& file_status(entry.second);
+
+    stream << ((file_status.type() == Filesystem::FileType::Dir) ? 'd' : '-') << file_status.permissionString() << "   1 ";
     stream << std::setw(10) << file_status.ownerString() << " " << std::setw(10) << file_status.groupString() << " ";
     stream << std::setw(10) << file_status.fileSize() << " ";
     stream << file_status.timeString() << " ";
-    stream << it->path().filename().string();
+    stream << filename;
     stream << "\r\n";
   }
   std::cout << "STR: \n" << stream.str() << std::endl;
