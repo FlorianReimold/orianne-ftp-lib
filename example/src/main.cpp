@@ -9,7 +9,7 @@ int main() {
 #ifdef WIN32
 	orianne::FtpServer server(io_service, 8080, "D:\\meas");
 #else // WIN32
-  orianne::FtpServer server(io_service, 8080, "/tmp");
+  orianne::FtpServer server(io_service, 8080, "/");
 #endif // WIN32
 
 	io_service.run();

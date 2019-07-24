@@ -16,6 +16,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Dumper Classes
@@ -331,8 +332,23 @@ namespace Filesystem
       std::string file_name(ffd.cFileName);
       content.emplace(std::string(ffd.cFileName), FileStatus(path + "\\" + std::string(ffd.cFileName)));
     } while (FindNextFile(hFind, &ffd) != 0);
-#endif // WIN32
+    FindClose(hFind);
+#else // WIN32
+    DIR *dp;
+    struct dirent *dirp;
+    if((dp = opendir(path.c_str())) == NULL)
+    {
+        std::cerr << "Error opening directory: " << strerror(errno) << std::endl;
+        return content;
+    }
 
+    while ((dirp = readdir(dp)) != NULL)
+    {
+      content.emplace(std::string(dirp->d_name), FileStatus(path + "/" + std::string(dirp->d_name)));
+    }
+    closedir(dp);
+
+#endif // WIN32
     return content;
   }
 }
