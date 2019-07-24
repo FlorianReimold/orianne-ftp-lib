@@ -7,7 +7,7 @@ int main() {
 	boost::asio::io_service io_service;
 
 #ifdef WIN32
-	orianne::FtpServer server(io_service, 8080, "D:\\meas");
+	orianne::FtpServer server(io_service, 8080, "C:\\");
 #else // WIN32
   orianne::FtpServer server(io_service, 8080, "/");
 #endif // WIN32

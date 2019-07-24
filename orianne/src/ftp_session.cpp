@@ -181,6 +181,7 @@ namespace Filesystem
   {
   public:
     FileStatus(const std::string& path)
+      : path_(path)
     {
 #ifdef WIN32
       const int error_code = _stat64(path.c_str(), &file_status_);
@@ -346,15 +347,50 @@ namespace Filesystem
       else
       {
         // We must not return the time, only the date :(
-        strftime(date, sizeof(date), " %e %Y", file_timeinfo);
+        strftime(date, sizeof(date), " %e  %Y", file_timeinfo);
       }
 
       return month_names[file_timeinfo->tm_mon] + std::string(date);
     }
 
+    bool canOpenDir() const
+    {
+      if (!is_ok_)
+        return false;
+
+      if (type() != FileType::Dir)
+        return false;
+
+      bool can_open_dir(false);
+#ifdef WIN32
+      std::string find_file_path = path_ + "\\*";
+      std::replace(find_file_path.begin(), find_file_path.end(), '/', '\\');
+
+      HANDLE hFind;
+      WIN32_FIND_DATA ffd;
+      hFind = FindFirstFile(find_file_path.c_str(), &ffd);
+      if (hFind != INVALID_HANDLE_VALUE)
+      {
+        can_open_dir = true;
+      }
+      FindClose(hFind);
+#else // WIN32
+      DIR *dp;
+      struct dirent *dirp;
+      if ((dp = opendir(path_.c_str())) != NULL)
+      {
+        can_open_dir = true;
+      }
+      closedir(dp);
+#endif // WIN32
+
+      return can_open_dir;
+    }
+
     ~FileStatus() {}
 
   private:
+    std::string path_;
     bool is_ok_;
 #ifdef WIN32
     struct __stat64 file_status_;
@@ -493,7 +529,7 @@ orianne::FtpResult orianne::FtpSession::change_working_directory(const std::stri
   if (file_status.type() != Filesystem::FileType::Dir)
     return orianne::FtpResult(550, "Failed ot change directory: The given resource is not a directory.");
 
-  if (!file_status.permissionGroupExecute())
+  if (!file_status.canOpenDir())
     return orianne::FtpResult(550, "Failed ot change directory: Permission denied.");
 
   working_directory = actual_new_working_dir;
