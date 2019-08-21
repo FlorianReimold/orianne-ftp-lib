@@ -1,6 +1,5 @@
 #pragma once
 
-#include <boost/filesystem.hpp>
 #include <boost/asio.hpp>
 
 #include <functional>
@@ -41,8 +40,8 @@ namespace orianne {
     boost::asio::ip::tcp::acceptor* acceptor;
     boost::asio::ip::tcp::socket& socket;
 
-    boost::filesystem::path root_directory;
-    boost::filesystem::path working_directory;
+    std::string local_filesystem_root;
+    std::string ftp_working_directory;
 
     std::string rename_from_path;
 
@@ -56,7 +55,7 @@ namespace orianne {
   /// public API
   //////////////////////////////////
   public:
-    void set_root_directory(const boost::filesystem::path& root_directory);
+    void set_root_directory(const std::string& root_directory);
 
   //////////////////////////////////
   /// FTP console callbacks
@@ -90,9 +89,7 @@ namespace orianne {
   /// Helper functions
   //////////////////////////////////
   private:
-    boost::filesystem::path to_local_path(const std::string& ftp_path);
-
-    
+    std::string to_local_path(const std::string& ftp_path);
   };
 
 }

@@ -8,7 +8,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(Threads REQUIRED)
 
 set(Boost_USE_STATIC_LIBS   ON)
-find_package(Boost 1.46.0 REQUIRED COMPONENTS filesystem system)
+find_package(Boost 1.46.0 REQUIRED COMPONENTS system)
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIR})
 endif()
@@ -37,8 +37,6 @@ add_library (${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         Boost::system
-    PRIVATE
-        Boost::filesystem
 )
 
 #target_compile_definitions(${PROJECT_NAME} ASIO_STANDALONE)

@@ -2,8 +2,6 @@
 
 #include <fstream>
 
-#include <boost/filesystem.hpp>
-
 #include "filesystem.h"
 
 #ifdef WIN32
@@ -168,13 +166,13 @@ struct FileLoader : dumper<FileLoader> {
 
 
 orianne::FtpSession::FtpSession(boost::asio::io_service& _service, boost::asio::ip::tcp::socket& socket_)
-  : io_service(_service), acceptor(0), working_directory("/"), socket(socket_)
+  : io_service(_service), acceptor(0), ftp_working_directory("/"), socket(socket_)
 {
 }
 
-void orianne::FtpSession::set_root_directory(boost::filesystem::path const& directory)
+void orianne::FtpSession::set_root_directory(const std::string& directory)
 {
-  root_directory = directory;
+  local_filesystem_root = orianne::Filesystem::cleanPathNative(directory);
 }
 
 orianne::FtpResult orianne::FtpSession::set_username(const std::string& username)
@@ -209,7 +207,7 @@ orianne::FtpResult orianne::FtpSession::set_passive() {
 orianne::FtpResult orianne::FtpSession::get_size(const std::string& filename) {
   auto local_path = to_local_path(filename);
 
-  Filesystem::FileStatus file_status(local_path.string());
+  Filesystem::FileStatus file_status(local_path);
 
   if (!file_status.isOk())
     return orianne::FtpResult(550, "Get Size Error: File does not exist or permission denied.");
@@ -221,28 +219,27 @@ orianne::FtpResult orianne::FtpSession::get_size(const std::string& filename) {
 }
 
 orianne::FtpResult orianne::FtpSession::change_working_directory(const std::string& new_directory) {
-  boost::filesystem::path actual_new_working_dir;
 
-  if (new_directory[0] != '/') {
-    if (new_directory.compare("..") == 0) {
-      actual_new_working_dir = working_directory.parent_path();
-    }
-    else {
-      actual_new_working_dir = working_directory / boost::filesystem::path(new_directory);
-    }
-  }
-  else {
-    std::string s = "/..";
-    if (new_directory == s) {
-      actual_new_working_dir = working_directory.parent_path();
-    }
-    else {
-      actual_new_working_dir.assign(new_directory, boost::filesystem::path::codecvt());
-    }
+  if (new_directory.empty())
+  {
+    return orianne::FtpResult(550, "Failed ot change directory: Empty path");
   }
 
-  auto local_path = to_local_path(actual_new_working_dir.string());
-  Filesystem::FileStatus file_status(local_path.string());
+  std::string absolute_new_working_dir;
+
+  if (new_directory[0] == '/')
+  {
+    // Absolute path given
+    absolute_new_working_dir = orianne::Filesystem::cleanPath(new_directory, false, '/');
+  }
+  else
+  {
+    // Make the path abolute
+    absolute_new_working_dir = orianne::Filesystem::cleanPath(ftp_working_directory + "/" + new_directory, false, '/');
+  }
+
+  auto local_path = to_local_path(absolute_new_working_dir);
+  Filesystem::FileStatus file_status(local_path);
 
   if (!file_status.isOk())
     return orianne::FtpResult(550, "Failed ot change directory: The given resource does not exist or permission denied.");
@@ -253,16 +250,23 @@ orianne::FtpResult orianne::FtpSession::change_working_directory(const std::stri
   if (!file_status.canOpenDir())
     return orianne::FtpResult(550, "Failed ot change directory: Permission denied.");
 
-  working_directory = actual_new_working_dir;
+  ftp_working_directory = absolute_new_working_dir;
   return orianne::FtpResult(250, "OK");
 }
 
 orianne::FtpResult orianne::FtpSession::create_new_directory(const std::string& new_directory) {
   auto local_path = to_local_path(new_directory);
 
-  if (boost::filesystem::create_directory(local_path))
+#ifdef WIN32
+  int ret = _mkdir(local_path.c_str());
+#else
+  mode_t mode = 0755;
+  int ret = mkdir(local_path.c_str(), mode);
+#endif
+
+  if (ret == 0)
   {
-    return orianne::FtpResult(257, "\"" + local_path.string() + "\"");
+    return orianne::FtpResult(257, "OK");
   }
   else
   {
@@ -271,16 +275,18 @@ orianne::FtpResult orianne::FtpSession::create_new_directory(const std::string& 
 }
 
 orianne::FtpResult orianne::FtpSession::remove_directory(const std::string& directory) {
-  boost::filesystem::path local_path = to_local_path(directory);
+  auto local_path = to_local_path(directory);
 
-  if (!boost::filesystem::is_directory(local_path))
-  {
-    return orianne::FtpResult(550, "Error removing directory. The given resource is not a directory.");
-  }
+#ifdef WIN32
+  int ret = _rmdir(local_path.c_str());
+#else
+  mode_t mode = 0755;
+  int ret = rmdir(local_path.c_str());
+#endif
 
-  if (boost::filesystem::remove(local_path))
+  if (ret == 0)
   {
-    return orianne::FtpResult(250, "OK");
+    return orianne::FtpResult(257, "OK");
   }
   else
   {
@@ -290,16 +296,18 @@ orianne::FtpResult orianne::FtpSession::remove_directory(const std::string& dire
 
 orianne::FtpResult orianne::FtpSession::remove_file(const std::string& filename)
 {
-  boost::filesystem::path local_path = to_local_path(filename);
+  auto local_path = to_local_path(filename);
 
-  if (boost::filesystem::is_directory(local_path))
-  {
-    return orianne::FtpResult(550, "Error removing file. The resource is a directory.");
-  }
+#ifdef WIN32
+  int ret = _unlink(local_path.c_str());
+#else
+  mode_t mode = 0755;
+  int ret = unlink(local_path.c_str());
+#endif
 
-  if (boost::filesystem::remove(local_path))
+  if (ret == 0)
   {
-    return orianne::FtpResult(250, "OK");
+    return orianne::FtpResult(257, "OK");
   }
   else
   {
@@ -310,7 +318,7 @@ orianne::FtpResult orianne::FtpSession::remove_file(const std::string& filename)
 orianne::FtpResult orianne::FtpSession::rename_file_from(const std::string& from_path) {
   auto local_path = to_local_path(from_path);
 
-  rename_from_path = local_path.string();
+  rename_from_path = local_path;
 
   return orianne::FtpResult(350, "Waiting for target path.");
 }
@@ -323,7 +331,7 @@ orianne::FtpResult orianne::FtpSession::rename_file_to(const std::string& to_pat
 
   auto local_to_path = to_local_path(to_path);
 
-  if (rename(rename_from_path.c_str(), local_to_path.string().c_str()) == 0)
+  if (rename(rename_from_path.c_str(), local_to_path.c_str()) == 0)
   {
     rename_from_path.clear();
     return orianne::FtpResult(250, "OK");
@@ -341,10 +349,7 @@ orianne::FtpResult orianne::FtpSession::set_type(const struct orianne::FtpTransf
 }
 
 orianne::FtpResult orianne::FtpSession::get_working_directory() {
-  std::string pwd = working_directory.string();
-#ifdef WIN32
-  std::replace(pwd.begin(), pwd.end(), '\\', '/'); // replace Windows separators by unix separators
-#endif
+  std::string pwd = ftp_working_directory;
   return orianne::FtpResult(257, "\"" + pwd + "\"");
 }
 
@@ -368,14 +373,14 @@ orianne::FtpResult orianne::FtpSession::get_system() {
 #endif
 }
 
-static std::string get_list(const boost::filesystem::path& path) {
+static std::string get_list(const std::string& local_filesystem_path) {
   std::stringstream stream;
 
-  orianne::Filesystem::FileStatus dir_status(path.string());
+  orianne::Filesystem::FileStatus dir_status(local_filesystem_path);
   if (dir_status.type() != orianne::Filesystem::FileType::Dir)
     return ""; // TODO: return proper error code!
 
-  auto dir_content = orianne::Filesystem::dirContent(path.string());
+  auto dir_content = orianne::Filesystem::dirContent(local_filesystem_path);
 
   for (const auto& entry : dir_content)
   {
@@ -395,25 +400,28 @@ static std::string get_list(const boost::filesystem::path& path) {
 
 void orianne::FtpSession::list(std::function<void(const orianne::FtpResult&)> cb) {
   std::shared_ptr<DirListDumper> dumper(new DirListDumper(cb, io_service));
-  dumper->set_data(get_list(root_directory / working_directory));
+
+  auto local_path = to_local_path(ftp_working_directory);
+
+  dumper->set_data(get_list(local_path));
   dumper->async_wait(*acceptor);
 }
 
 void orianne::FtpSession::store(const std::string& filename, std::function<void(const orianne::FtpResult&)> cb) {
-  boost::filesystem::path local_path = to_local_path(filename);
+  auto local_path = to_local_path(filename);
 
-  std::cout << "Opening " << local_path.make_preferred() << " for upload" << std::endl;
+  std::cout << "Opening " << local_path << " for upload" << std::endl;
 
-  std::shared_ptr<FileLoader> dumper = FileLoader::create(cb, io_service, local_path.make_preferred().string());
+  std::shared_ptr<FileLoader> dumper = FileLoader::create(cb, io_service, local_path);
   dumper->async_wait(*acceptor);
 }
 
 void orianne::FtpSession::retrieve(const std::string& filename, std::function<void(const orianne::FtpResult&)> cb) {
-  boost::filesystem::path local_path = to_local_path(filename);
+  auto local_path = to_local_path(filename);
 
-  std::cout << "Opening " << local_path.make_preferred() << " for download" << std::endl;
+  std::cout << "Opening " << local_path << " for download" << std::endl;
 
-  std::shared_ptr<FileDumper> dumper = FileDumper::create(cb, io_service, local_path.make_preferred().string());
+  std::shared_ptr<FileDumper> dumper = FileDumper::create(cb, io_service, local_path);
   dumper->async_wait(*acceptor);
 }
 
@@ -423,19 +431,19 @@ orianne::FtpTransferType orianne::read_transfer_type(std::istream& stream) {
   return transfer_type;
 }
 
-boost::filesystem::path orianne::FtpSession::to_local_path(const std::string& ftp_path)
+std::string orianne::FtpSession::to_local_path(const std::string& ftp_path)
 {
-  boost::filesystem::path local_path;
+  // First make the ftp path absolute if it isn't already
+  std::string absolute_ftp_path;
   if (ftp_path[0] == '/')
   {
-    // Absolute path
-    local_path = root_directory / boost::filesystem::path(ftp_path);
+    absolute_ftp_path = ftp_path;
   }
   else
   {
-    // relative path
-    local_path = root_directory / working_directory / boost::filesystem::path(ftp_path);
+    absolute_ftp_path = orianne::Filesystem::cleanPath(ftp_working_directory + "/" + ftp_path, false, '/');
   }
 
-  return local_path;
+  // Now map it to the local filesystem
+  return orianne::Filesystem::cleanPathNative(local_filesystem_root + "/" + absolute_ftp_path);
 }

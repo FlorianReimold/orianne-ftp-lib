@@ -321,8 +321,13 @@ namespace Filesystem
 
     if (path.size() >= (absolute_root.size() + 1))
     {
-      size_t start = absolute_root.size() + 1;
-      size_t end = 0;
+      size_t start, end;
+      
+      if (absolute_root.empty())
+        start = 0;
+      else
+        start = absolute_root.size();
+
       do
       {
         if (windows_path)
@@ -376,21 +381,24 @@ namespace Filesystem
       } while (start < path.size());
 
       // Join the components again
-      if (components.size() == 0)
+      if (components.size() == 0 && absolute_root.empty())
       {
-        if (absolute_root.empty())
           return ".";
-        else
-          return absolute_root;
       }
     }
 
     std::stringstream path_ss;
     path_ss << absolute_root;
+
+    if (windows_path && !absolute_root.empty())
+    {
+      path_ss << output_separator; // The windows drive must be followed by a separator. When referencing a network drive.
+    }
+
     auto comp_it = components.begin();
     while (comp_it != components.end())
     {
-      if ((comp_it != components.begin()) || (!absolute_root.empty()))
+      if (comp_it != components.begin())
         path_ss << output_separator;
       
       path_ss << *comp_it;
@@ -399,6 +407,18 @@ namespace Filesystem
     }
 
     return path_ss.str();
+  }
+
+  std::string cleanPathNative(const std::string& path)
+  {
+#ifdef WIN32
+    bool windows_path = true;
+    char separator = '\\';
+#else // WIN32
+    bool windows_path = false;
+    char separator = '/';
+#endif // WIN32
+    return cleanPath(path, windows_path, separator);
   }
 }
 }

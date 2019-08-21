@@ -27,7 +27,7 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
   explicit connection_handler(boost::asio::io_service& service, std::string path)
     : socket(service), session(service, socket), console(session)
   {
-    session.set_root_directory(boost::filesystem::path{ path });
+    session.set_root_directory(path);
   }
 
   typedef std::shared_ptr<connection_handler> ptr;
