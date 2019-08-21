@@ -367,8 +367,8 @@ namespace Filesystem
       std::replace(find_file_path.begin(), find_file_path.end(), '/', '\\');
 
       HANDLE hFind;
-      WIN32_FIND_DATA ffd;
-      hFind = FindFirstFile(find_file_path.c_str(), &ffd);
+      WIN32_FIND_DATAA ffd;
+      hFind = FindFirstFileA(find_file_path.c_str(), &ffd);
       if (hFind != INVALID_HANDLE_VALUE)
       {
         can_open_dir = true;
@@ -407,8 +407,8 @@ namespace Filesystem
     std::replace(find_file_path.begin(), find_file_path.end(), '/', '\\');
 
     HANDLE hFind;
-    WIN32_FIND_DATA ffd;
-    hFind = FindFirstFile(find_file_path.c_str(), &ffd);
+    WIN32_FIND_DATAA ffd;
+    hFind = FindFirstFileA(find_file_path.c_str(), &ffd);
     if (hFind == INVALID_HANDLE_VALUE)
     {
       std::cerr << "FindFirstFile Error" << std::endl;
@@ -419,7 +419,7 @@ namespace Filesystem
     {
       std::string file_name(ffd.cFileName);
       content.emplace(std::string(ffd.cFileName), FileStatus(path + "\\" + std::string(ffd.cFileName)));
-    } while (FindNextFile(hFind, &ffd) != 0);
+    } while (FindNextFileA(hFind, &ffd) != 0);
     FindClose(hFind);
 #else // WIN32
     DIR *dp;
