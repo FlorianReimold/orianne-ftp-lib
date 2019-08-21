@@ -20,6 +20,8 @@ set (includes
 
 # Private source files
 set(sources
+    src/filesystem.cpp
+    src/filesystem.h
     src/ftp_console.cpp
     src/ftp_console.h
     src/ftp_server.cpp

@@ -1,13 +1,24 @@
 #include <orianne/ftp_server.h>
 #include "ftp_console.h"
 #include "ftp_session.h"
+#include "filesystem.h"
 
 #include <memory>
 #include <iostream>
 
+
 orianne::FtpServer::FtpServer(boost::asio::io_service& io_service, uint16_t port, std::string path)
   : acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {
-  this->path = path;
+
+#ifdef WIN32
+  char path_separator = '\\';
+  bool windows_path = true;
+#else
+  char path_separator = '/';
+  boool windows_path = false;
+#endif // WIN32
+
+  this->path = orianne::Filesystem::cleanPath(path, windows_path, path_separator);
   start();
 }
 
