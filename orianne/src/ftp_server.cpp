@@ -15,7 +15,7 @@ orianne::FtpServer::FtpServer(boost::asio::io_service& io_service, uint16_t port
   bool windows_path = true;
 #else
   char path_separator = '/';
-  boool windows_path = false;
+  bool windows_path = false;
 #endif // WIN32
 
   this->path = orianne::Filesystem::cleanPath(path, windows_path, path_separator);
