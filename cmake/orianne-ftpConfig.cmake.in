@@ -1,0 +1,3 @@
+@PACKAGE_INIT@
+
+INCLUDE("@PACKAGE_orianne-ftp_INSTALL_CMAKE_DIR@/orianne-ftpTargets.cmake")
