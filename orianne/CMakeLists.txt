@@ -6,12 +6,13 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(Threads REQUIRED)
+find_package(asio REQUIRED)
 
-set(Boost_USE_STATIC_LIBS   ON)
-find_package(Boost 1.46.0 REQUIRED COMPONENTS system)
-if (Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIR})
-endif()
+#set(Boost_USE_STATIC_LIBS   ON)
+#find_package(Boost 1.46.0 REQUIRED COMPONENTS system)
+#if (Boost_FOUND)
+#    include_directories(${Boost_INCLUDE_DIR})
+#endif()
 
 # Public API include directory
 set (includes
@@ -34,16 +35,20 @@ add_library (${PROJECT_NAME}
     ${sources}
 )
 
+#target_link_libraries(${PROJECT_NAME}
+#    PUBLIC
+#        Boost::system
+#)
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        Boost::system
+        asio::asio
 )
 
-#target_compile_definitions(${PROJECT_NAME} ASIO_STANDALONE)
+target_compile_definitions(${PROJECT_NAME} PUBLIC ASIO_STANDALONE)
 target_compile_definitions(${PROJECT_NAME} PUBLIC __USE_FILE_OFFSET64=1)
 
 # Add Boost include directory
-target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIR})
+#target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIR})
 
 # Add own public include directory
 target_include_directories(${PROJECT_NAME} PUBLIC include/)

@@ -29,20 +29,20 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 template<typename T> struct dumper : std::enable_shared_from_this<T> {
-  boost::asio::io_service& service;
-  boost::asio::ip::tcp::socket socket;
+  asio::io_service& service;
+  asio::ip::tcp::socket socket;
   std::function<void(const orianne::FtpResult&)> callback;
 
-  explicit dumper(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service_)
+  explicit dumper(std::function<void(const orianne::FtpResult&)> cb, asio::io_service& service_)
     : service(service_), socket(service), callback(cb)
   {
   }
 
-  static std::shared_ptr<T> create(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service) {
+  static std::shared_ptr<T> create(std::function<void(const orianne::FtpResult&)> cb, asio::io_service& service) {
     return std::shared_ptr<T>(new T(cb, service));
   }
 
-  void async_wait(boost::asio::ip::tcp::acceptor& acceptor)
+  void async_wait(asio::ip::tcp::acceptor& acceptor)
   {
     acceptor.async_accept(socket, std::bind(&T::handle_connect, this->shared_from_this()));
   }
@@ -51,14 +51,14 @@ template<typename T> struct dumper : std::enable_shared_from_this<T> {
 struct DirListDumper : dumper<DirListDumper> {
   std::string data;
 
-  explicit DirListDumper(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service)
+  explicit DirListDumper(std::function<void(const orianne::FtpResult&)> cb, asio::io_service& service)
     : dumper(cb, service)
   {
   }
 
   void handle_connect() {
-    boost::asio::async_write(socket,
-      boost::asio::buffer(data),
+    asio::async_write(socket,
+      asio::buffer(data),
       std::bind(&DirListDumper::handle_write, shared_from_this()));
     callback(orianne::FtpResult(150, "Sending directory listing."));
   }
@@ -75,14 +75,14 @@ struct DirListDumper : dumper<DirListDumper> {
 struct FileDumper : dumper<FileDumper> {
   std::ifstream stream;
   char buffer[1024];
-  boost::asio::mutable_buffers_1 m_buffer;
+  asio::mutable_buffers_1 m_buffer;
 
-  explicit FileDumper(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
+  explicit FileDumper(std::function<void(const orianne::FtpResult&)> cb, asio::io_service& service, const std::string& path)
     : dumper(cb, service), stream(path.c_str(), std::ios::in | std::ios::binary), m_buffer(buffer, 1024)
   {
   }
 
-  static std::shared_ptr<FileDumper> create(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
+  static std::shared_ptr<FileDumper> create(std::function<void(const orianne::FtpResult&)> cb, asio::io_service& service, const std::string& path) {
     return std::shared_ptr<FileDumper>(new FileDumper(cb, service, path));
   }
 
@@ -101,9 +101,9 @@ struct FileDumper : dumper<FileDumper> {
     }
     else {
       if (count < 1024)
-        m_buffer = boost::asio::buffer(buffer, (size_t)count);
+        m_buffer = asio::buffer(buffer, (size_t)count);
 
-      boost::asio::async_write(socket,
+      asio::async_write(socket,
         m_buffer,
         std::bind(&FileDumper::handle_write, shared_from_this()));
     }
@@ -117,21 +117,21 @@ struct FileLoader : dumper<FileLoader> {
   std::ofstream stream;
   char buffer[4096];
 
-  explicit FileLoader(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path)
+  explicit FileLoader(std::function<void(const orianne::FtpResult&)> cb, asio::io_service& service, const std::string& path)
     : dumper(cb, service), stream(path.c_str(), std::ios::out | std::ios::binary)
   {
   }
 
-  static std::shared_ptr<FileLoader> create(std::function<void(const orianne::FtpResult&)> cb, boost::asio::io_service& service, const std::string& path) {
+  static std::shared_ptr<FileLoader> create(std::function<void(const orianne::FtpResult&)> cb, asio::io_service& service, const std::string& path) {
     return std::shared_ptr<FileLoader>(new FileLoader(cb, service, path));
   }
 
   void handle_connect() {
     callback(orianne::FtpResult(150, "Receiving file contents."));
 
-    boost::asio::async_read(socket,
-      boost::asio::buffer(buffer, 4096),
-      boost::asio::transfer_at_least(1),
+    asio::async_read(socket,
+      asio::buffer(buffer, 4096),
+      asio::transfer_at_least(1),
       std::bind(static_cast<void(FileLoader::*)(size_t)>(&FileLoader::handle_read),
         shared_from_this(),
         std::placeholders::_2));
@@ -147,9 +147,9 @@ struct FileLoader : dumper<FileLoader> {
     else {
       stream.write(buffer, count);
       buffer[0] = '\0';
-      boost::asio::async_read(socket,
-        boost::asio::buffer(buffer, 4096),
-        boost::asio::transfer_all(),
+      asio::async_read(socket,
+        asio::buffer(buffer, 4096),
+        asio::transfer_all(),
         std::bind(static_cast<void(FileLoader::*)(size_t)>(&FileLoader::handle_read),
           shared_from_this(),
           std::placeholders::_2));
@@ -165,7 +165,7 @@ struct FileLoader : dumper<FileLoader> {
 ////////////////////////////////////////////////////////////////////////////////
 
 
-orianne::FtpSession::FtpSession(boost::asio::io_service& _service, boost::asio::ip::tcp::socket& socket_)
+orianne::FtpSession::FtpSession(asio::io_service& _service, asio::ip::tcp::socket& socket_)
   : io_service(_service), acceptor(0), ftp_working_directory("/"), socket(socket_)
 {
 }
@@ -184,7 +184,7 @@ orianne::FtpResult orianne::FtpSession::set_password(const std::string& password
   return orianne::FtpResult(230, "Login successful.");
 }
 
-static std::string endpoint_to_string(boost::asio::ip::address_v4::bytes_type address, unsigned short port) {
+static std::string endpoint_to_string(asio::ip::address_v4::bytes_type address, unsigned short port) {
   std::stringstream stream;
   stream << "(";
   for (int i = 0; i<4; i++)
@@ -196,7 +196,7 @@ static std::string endpoint_to_string(boost::asio::ip::address_v4::bytes_type ad
 
 orianne::FtpResult orianne::FtpSession::set_passive() {
   if (acceptor == 0)
-    acceptor = new boost::asio::ip::tcp::acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 0)); // Port = 0 makes the OS choose a free port for us!
+    acceptor = new asio::ip::tcp::acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0)); // Port = 0 makes the OS choose a free port for us!
 
   std::string tmp_message = "Entering passive mode ";
   tmp_message.append(endpoint_to_string(socket.local_endpoint().address().to_v4().to_bytes(), acceptor->local_endpoint().port()));

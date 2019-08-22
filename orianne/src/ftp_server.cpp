@@ -6,9 +6,18 @@
 #include <memory>
 #include <iostream>
 
+#ifndef ASIO_STANDALONE
+using namespace boost;
+using boost::system::error_code;
+#else
+using asio::error_code;
+#endif // ASIO_STANDALONE
 
-orianne::FtpServer::FtpServer(boost::asio::io_service& io_service, uint16_t port, std::string path)
-  : acceptor(io_service, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {
+
+orianne::FtpServer::FtpServer(asio::io_service& io_service, uint16_t port, std::string path)
+  : acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
+  , io_service_(io_service)
+{
 
 #ifdef WIN32
   char path_separator = '\\';
@@ -24,7 +33,7 @@ orianne::FtpServer::FtpServer(boost::asio::io_service& io_service, uint16_t port
 
 struct connection_handler : std::enable_shared_from_this<connection_handler> {
 
-  explicit connection_handler(boost::asio::io_service& service, std::string path)
+  explicit connection_handler(asio::io_service& service, std::string path)
     : socket(service), session(service, socket), console(session)
   {
     session.set_root_directory(path);
@@ -32,26 +41,26 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
 
   typedef std::shared_ptr<connection_handler> ptr;
 
-  static ptr create(boost::asio::io_service& service, std::string path) {
+  static ptr create(asio::io_service& service, std::string path) {
     return ptr(new connection_handler(service, path));
   }
 
-  boost::asio::ip::tcp::socket socket;
+  asio::ip::tcp::socket socket;
   orianne::FtpSession session;
   orianne::FtpConsole console;
-  boost::asio::streambuf buf;
+  asio::streambuf buf;
 
-  void handle_connect(const boost::system::error_code code, orianne::FtpServer* server) {
+  void handle_connect(const error_code code, orianne::FtpServer* server) {
     std::cout << "handle_connection()" << std::endl;
 
     console.set_write_callback(std::bind(&connection_handler::write_message,
       this, std::placeholders::_1));
 
-    boost::asio::async_write(socket,
-      boost::asio::buffer(console.greeter()),
+    asio::async_write(socket,
+      asio::buffer(console.greeter()),
       std::bind(&connection_handler::handle_write, shared_from_this(),
-        /*boost::asio::placeholders::error*/ std::placeholders::_1,
-        /*boost::asio::placeholders::bytes_transferred*/ std::placeholders::_2));
+        /*asio::placeholders::error*/ std::placeholders::_1,
+        /*asio::placeholders::bytes_transferred*/ std::placeholders::_2));
 
     trigger_read();
 
@@ -60,12 +69,12 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
 
   void trigger_read() {
     if (socket.is_open()) {
-      boost::asio::async_read_until(socket, buf, "\n",
+      asio::async_read_until(socket, buf, "\n",
         std::bind(&connection_handler::handle_read, shared_from_this()));
     }
   }
 
-  void handle_write(const boost::system::error_code& /*error*/, size_t
+  void handle_write(const error_code& /*error*/, size_t
   /*bytes_transferred*/) {
 
   }
@@ -86,13 +95,13 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
     std::string *str = new std::string(buf);
     str->append("\r\n");
     std::cout << "Message: " << *str << std::endl;
-    boost::asio::async_write(socket, boost::asio::buffer(*str),
+    asio::async_write(socket, asio::buffer(*str),
       std::bind(&connection_handler::dispose_write_buffer,
-        shared_from_this(), /*boost::asio::placeholders::error*/ std::placeholders::_1,
-        /*boost::asio::placeholders::bytes_transferred*/ std::placeholders::_2));
+        shared_from_this(), /*asio::placeholders::error*/ std::placeholders::_1,
+        /*asio::placeholders::bytes_transferred*/ std::placeholders::_2));
   }
 
-  void dispose_write_buffer(const boost::system::error_code& /*error*/,
+  void dispose_write_buffer(const error_code& /*error*/,
     size_t /*bytes_transferred*/) {
 
   }
@@ -101,11 +110,10 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
 void orianne::FtpServer::start() {
   std::cout << "start()" << std::endl;
 
-  connection_handler::ptr handler =
-    connection_handler::create(acceptor.get_io_service(), path);
+  connection_handler::ptr handler = connection_handler::create(io_service_, path);
   std::shared_ptr<connection_handler>& sptr(handler);
 
   acceptor.async_accept(handler->socket,
     std::bind(&connection_handler::handle_connect, sptr,
-      /*boost::asio::placeholders::error*/ std::placeholders::_1, this));
+      /*asio::placeholders::error*/ std::placeholders::_1, this));
 }

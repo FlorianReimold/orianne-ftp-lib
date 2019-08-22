@@ -1,18 +1,25 @@
 #pragma once
 
+#ifdef ASIO_STANDALONE
+#include <asio.hpp>
+#else // ASIO_STANDALONE
 #include <boost/asio.hpp>
+using boost;
+#endif // ASIO_STANDALONE
+
 #include <string>
 
 namespace orianne {
 
   class FtpServer {
   public:
-    FtpServer(boost::asio::io_service& io_service, uint16_t port, std::string path);
+    FtpServer(asio::io_service& io_service, uint16_t port, std::string path);
     void start();
 
   private:
     std::string path;
-    boost::asio::ip::tcp::acceptor acceptor;
+    asio::ip::tcp::acceptor acceptor;
+    asio::io_service& io_service_;
   };
 
 }

@@ -2,9 +2,13 @@
 
 #include <iostream>
 
+#ifndef ASIO_STANDALONE
+using namespace boost;
+#endif // ASIO_STANDALONE
+
 int main() {
   try {
-	boost::asio::io_service io_service;
+	asio::io_service io_service;
 
 #ifdef WIN32
 	orianne::FtpServer server(io_service, 8080, "C:\\");

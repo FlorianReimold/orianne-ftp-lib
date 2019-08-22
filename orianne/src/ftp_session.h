@@ -1,6 +1,11 @@
 #pragma once
 
+#ifdef ASIO_STANDALONE
+#include <asio.hpp>
+#else // ASIO_STANDALONE
 #include <boost/asio.hpp>
+using boost;
+#endif // ASIO_STANDALONE
 
 #include <functional>
 
@@ -36,9 +41,9 @@ namespace orianne {
   /// Member variables
   //////////////////////////////////
   private:
-    boost::asio::io_service& io_service;
-    boost::asio::ip::tcp::acceptor* acceptor;
-    boost::asio::ip::tcp::socket& socket;
+    asio::io_service& io_service;
+    asio::ip::tcp::acceptor* acceptor;
+    asio::ip::tcp::socket& socket;
 
     std::string local_filesystem_root;
     std::string ftp_working_directory;
@@ -49,7 +54,7 @@ namespace orianne {
   /// Constructor
   //////////////////////////////////
   public:
-    explicit FtpSession(boost::asio::io_service&, boost::asio::ip::tcp::socket& socket);
+    explicit FtpSession(asio::io_service&, asio::ip::tcp::socket& socket);
 
   //////////////////////////////////
   /// public API
