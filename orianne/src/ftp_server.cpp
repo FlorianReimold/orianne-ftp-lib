@@ -108,7 +108,7 @@ orianne::FtpServer::FtpServer(asio::io_service& io_service, uint16_t port, std::
   this->path = orianne::Filesystem::cleanPath(path, windows_path, path_separator);
 
 #ifndef NDEBUG
-  std::cout << "[FTP]: Starting FTP Server on port " << port << " with local root \"" << this->path << "\"" << std::endl;
+  std::cout << "[FTP]: Starting FTP Server on port " << getPort() << " with local root \"" << this->path << "\"" << std::endl;
 #endif
 
   start();
