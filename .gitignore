@@ -9,3 +9,4 @@ ipch
 *.db
 /build
 /.vs
+/CMakeLists.txt.user

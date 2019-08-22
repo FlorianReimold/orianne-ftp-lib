@@ -11,9 +11,9 @@ int main() {
 	asio::io_service io_service;
 
 #ifdef WIN32
-	orianne::FtpServer server(io_service, 8080, "C:\\");
+    orianne::FtpServer server(io_service, 21, "C:\\");
 #else // WIN32
-  orianne::FtpServer server(io_service, 8080, "/");
+  orianne::FtpServer server(io_service, 21, "/");
 #endif // WIN32
 
 	io_service.run();
