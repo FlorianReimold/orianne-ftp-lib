@@ -17,12 +17,16 @@ static void build_result_mesg(std::string& mesg, orianne::FtpResult result) {
 static void write_result(const orianne::FtpResult& result, orianne::FtpConsole::write_message_func write_message) {
   std::string out_mesg;
   build_result_mesg(out_mesg, result);
-  std::cout << " > " << out_mesg << std::endl;
+#ifndef NDEBUG
+  std::cout << "[FTP] > " << out_mesg << std::endl;
+#endif
   write_message(out_mesg);
 }
 
 void orianne::FtpConsole::read_line(const std::string& mesg) {
-  std::cout << " < " << mesg << std::endl;
+#ifndef NDEBUG
+  std::cout << "[FTP] < " << mesg << std::endl;
+#endif
 
   std::stringstream stream(mesg);
 

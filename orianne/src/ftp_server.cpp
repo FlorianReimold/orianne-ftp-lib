@@ -51,7 +51,9 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
   asio::streambuf buf;
 
   void handle_connect(const error_code code, orianne::FtpServer* server) {
-    std::cout << "handle_connection()" << std::endl;
+#ifndef NDEBUG
+    std::cout << "[FTP]: Client connected" << std::endl;
+#endif
 
     console.set_write_callback(std::bind(&connection_handler::write_message,
       this, std::placeholders::_1));
@@ -94,7 +96,9 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
     const char* buf = message.c_str();
     std::string *str = new std::string(buf);
     str->append("\r\n");
-    std::cout << "Message: " << *str << std::endl;
+//#ifndef NDEBUG
+//    std::cout << "[FTP] > " << *str << std::endl;
+//#endif
     asio::async_write(socket, asio::buffer(*str),
       std::bind(&connection_handler::dispose_write_buffer,
         shared_from_this(), /*asio::placeholders::error*/ std::placeholders::_1,
@@ -108,7 +112,9 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
 };
 
 void orianne::FtpServer::start() {
-  std::cout << "start()" << std::endl;
+#ifndef NDEBUG
+  std::cout << "[FTP]: Starting FTP Server" << std::endl;
+#endif
 
   connection_handler::ptr handler = connection_handler::create(io_service_, path);
   std::shared_ptr<connection_handler>& sptr(handler);

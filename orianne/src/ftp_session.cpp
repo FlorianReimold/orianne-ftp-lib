@@ -139,7 +139,6 @@ struct FileLoader : dumper<FileLoader> {
 
   void handle_read(std::size_t recvlen) {
     size_t count = recvlen;
-    //std::cout << "buffer size: " << count << std::endl;
 
     if (count == 0) {
       callback(orianne::FtpResult(226, "Done."));
@@ -394,7 +393,9 @@ static std::string get_list(const std::string& local_filesystem_path) {
     stream << filename;
     stream << "\r\n";
   }
+#ifndef NDEBUG
   std::cout << "STR: \n" << stream.str() << std::endl;
+#endif
   return stream.str();
 }
 
@@ -409,8 +410,9 @@ void orianne::FtpSession::list(std::function<void(const orianne::FtpResult&)> cb
 
 void orianne::FtpSession::store(const std::string& filename, std::function<void(const orianne::FtpResult&)> cb) {
   auto local_path = to_local_path(filename);
-
-  std::cout << "Opening " << local_path << " for upload" << std::endl;
+#ifndef NDEBUG
+  std::cout << "[FTP]: Opening " << local_path << " for upload" << std::endl;
+#endif
 
   std::shared_ptr<FileLoader> dumper = FileLoader::create(cb, io_service, local_path);
   dumper->async_wait(*acceptor);
@@ -419,7 +421,9 @@ void orianne::FtpSession::store(const std::string& filename, std::function<void(
 void orianne::FtpSession::retrieve(const std::string& filename, std::function<void(const orianne::FtpResult&)> cb) {
   auto local_path = to_local_path(filename);
 
-  std::cout << "Opening " << local_path << " for download" << std::endl;
+#ifndef NDEBUG
+  std::cout << "[FTP]: Opening " << local_path << " for download" << std::endl;
+#endif
 
   std::shared_ptr<FileDumper> dumper = FileDumper::create(cb, io_service, local_path);
   dumper->async_wait(*acceptor);
