@@ -28,7 +28,7 @@ There is an example project provided that will create an FTP Server at `C:\` (Wi
 	git submodule update
 	```
 	
-3. CMake the project			*(Building as debug will add some debug output that is helpfull so see if everything is working)*
+3. CMake the project *(Building as debug will add some debug output that is helpfull so see if everything is working)*
 	```console
 	mkdir build
 	cd build
@@ -39,4 +39,4 @@ There is an example project provided that will create an FTP Server at `C:\` (Wi
 	- Linux: `make`
 	- Windows: Open `build\orianne.sln` with Visual Studio and build the example project
 
-5. Start `example` / `example.exe` and connect with your favourite FTP Client (e.g. FileZilla)
+5. Start `example` / `example.exe` and connect with your favourite FTP Client (e.g. FileZilla) on port 2121 *(This port is used so you don't need root privileges to start the FTP server)*

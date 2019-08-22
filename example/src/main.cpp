@@ -10,11 +10,14 @@ int main() {
   try {
 	asio::io_service io_service;
 
+    uint16_t port = 2121;
 #ifdef WIN32
-    orianne::FtpServer server(io_service, 21, "C:\\");
+    std::string local_root =  "C:\\"; // The backslash at the end is necessary!
 #else // WIN32
-  orianne::FtpServer server(io_service, 21, "/");
+    std::string local_root =  "/";
 #endif // WIN32
+
+    orianne::FtpServer server(io_service, port, local_root);
 
 	io_service.run();
   }

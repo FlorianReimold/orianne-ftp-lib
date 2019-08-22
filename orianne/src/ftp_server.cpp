@@ -18,7 +18,6 @@ orianne::FtpServer::FtpServer(asio::io_service& io_service, uint16_t port, std::
   : acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
   , io_service_(io_service)
 {
-
 #ifdef WIN32
   char path_separator = '\\';
   bool windows_path = true;
@@ -28,6 +27,11 @@ orianne::FtpServer::FtpServer(asio::io_service& io_service, uint16_t port, std::
 #endif // WIN32
 
   this->path = orianne::Filesystem::cleanPath(path, windows_path, path_separator);
+
+#ifndef NDEBUG
+  std::cout << "[FTP]: Starting FTP Server on port " << port << " with local root \"" << this->path << "\"" << std::endl;
+#endif
+
   start();
 }
 
@@ -112,10 +116,6 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
 };
 
 void orianne::FtpServer::start() {
-#ifndef NDEBUG
-  std::cout << "[FTP]: Starting FTP Server" << std::endl;
-#endif
-
   connection_handler::ptr handler = connection_handler::create(io_service_, path);
   std::shared_ptr<connection_handler>& sptr(handler);
 
