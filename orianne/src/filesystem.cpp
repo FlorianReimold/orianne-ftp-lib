@@ -9,7 +9,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#else WIN32
+#else // WIN32
 
 #include <dirent.h>
 
