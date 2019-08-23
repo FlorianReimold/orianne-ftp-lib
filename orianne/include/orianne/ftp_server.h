@@ -16,6 +16,8 @@ namespace orianne {
     FtpServer(asio::io_service& io_service, uint16_t port, std::string path);
     void start();
 
+    uint16_t getPort() const;
+
   private:
     std::string path;
     asio::ip::tcp::acceptor acceptor;

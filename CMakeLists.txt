@@ -10,5 +10,16 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 project(orianne)
 
+set(as_subproject orianne-ftp)
+
+string(COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}" _cmp)
+if (_cmp)
+  macro(find_package)
+    if(NOT "${ARGV0}" IN_LIST as_subproject)
+      _find_package(${ARGV})
+    endif()
+  endmacro()
+endif()
+
 add_subdirectory(orianne)
 add_subdirectory(example)

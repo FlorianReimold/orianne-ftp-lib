@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD 11)
 #endif()
 
 find_package(asio REQUIRED)
+find_package(orianne-ftp REQUIRED)
 
 set(sources
     src/main.cpp
@@ -23,6 +24,6 @@ add_executable (${PROJECT_NAME}
 )
 
 target_link_libraries (${PROJECT_NAME}
-    orianne-ftp
+    orianne::orianne-ftp
 #	Boost::system
 )

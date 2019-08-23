@@ -13,24 +13,6 @@ using boost::system::error_code;
 using asio::error_code;
 #endif // ASIO_STANDALONE
 
-
-orianne::FtpServer::FtpServer(asio::io_service& io_service, uint16_t port, std::string path)
-  : acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
-  , io_service_(io_service)
-{
-
-#ifdef WIN32
-  char path_separator = '\\';
-  bool windows_path = true;
-#else
-  char path_separator = '/';
-  bool windows_path = false;
-#endif // WIN32
-
-  this->path = orianne::Filesystem::cleanPath(path, windows_path, path_separator);
-  start();
-}
-
 struct connection_handler : std::enable_shared_from_this<connection_handler> {
 
   explicit connection_handler(asio::io_service& service, std::string path)
@@ -96,9 +78,9 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
     const char* buf = message.c_str();
     std::string *str = new std::string(buf);
     str->append("\r\n");
-//#ifndef NDEBUG
-//    std::cout << "[FTP] > " << *str << std::endl;
-//#endif
+    //#ifndef NDEBUG
+    //    std::cout << "[FTP] > " << *str << std::endl;
+    //#endif
     asio::async_write(socket, asio::buffer(*str),
       std::bind(&connection_handler::dispose_write_buffer,
         shared_from_this(), /*asio::placeholders::error*/ std::placeholders::_1,
@@ -111,15 +93,37 @@ struct connection_handler : std::enable_shared_from_this<connection_handler> {
   }
 };
 
-void orianne::FtpServer::start() {
+orianne::FtpServer::FtpServer(asio::io_service& io_service, uint16_t port, std::string path)
+  : acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
+  , io_service_(io_service)
+{
+#ifdef WIN32
+  char path_separator = '\\';
+  bool windows_path = true;
+#else
+  char path_separator = '/';
+  bool windows_path = false;
+#endif // WIN32
+
+  this->path = orianne::Filesystem::cleanPath(path, windows_path, path_separator);
+
 #ifndef NDEBUG
-  std::cout << "[FTP]: Starting FTP Server" << std::endl;
+  std::cout << "[FTP]: Starting FTP Server on port " << getPort() << " with local root \"" << this->path << "\"" << std::endl;
 #endif
 
+  start();
+}
+
+void orianne::FtpServer::start() {
   connection_handler::ptr handler = connection_handler::create(io_service_, path);
   std::shared_ptr<connection_handler>& sptr(handler);
 
   acceptor.async_accept(handler->socket,
     std::bind(&connection_handler::handle_connect, sptr,
       /*asio::placeholders::error*/ std::placeholders::_1, this));
+}
+
+uint16_t orianne::FtpServer::getPort() const
+{
+  return acceptor.local_endpoint().port();
 }
