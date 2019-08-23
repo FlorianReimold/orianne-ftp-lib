@@ -44,6 +44,7 @@ add_library (orianne::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         asio::asio
+        Threads::Threads
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ASIO_STANDALONE)
