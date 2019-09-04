@@ -22,7 +22,7 @@ There is an example project provided that will create an FTP Server at `C:\` (Wi
 	
 2. Checkout this repo and the asio submodule
 	```console
-	git checkout https://github.com/FlorianReimold/orianne-ftp-lib.git
+	git clone https://github.com/FlorianReimold/orianne-ftp-lib.git
 	cd orianne-ftp-lib
 	git submodule init
 	git submodule update
